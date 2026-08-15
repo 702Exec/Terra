@@ -6,7 +6,7 @@
 
 ## What it is
 
-A four-legged extraction engine, dropped from the harvest fleet's mothership and driven into the surface like an ordnance strike. It anchors, opens, and begins stripping planetary material, beaming it back to orbit for the rest of the mission.
+A four-legged extraction engine, dropped from **the Aegis** — the harvest fleet's mothership — and driven into the surface like an ordnance strike. It anchors, opens, and begins stripping planetary material, beaming it back to orbit for the rest of the mission.
 
 | | |
 |---|---|
@@ -18,7 +18,9 @@ A four-legged extraction engine, dropped from the harvest fleet's mothership and
 
 It does not move. That is a design decision, not an omission — the entire mission is built on having one fixed thing that must be held, and a relocatable base would replace "defend this" with "retreat from this," which is a different game.
 
-**Naming is open.** "Sovereign Spire" was chosen when it was a spire; it no longer fits a squat four-legged engine. "World Engine" is not available — it is the term from *Man of Steel*, which is also where the silhouette comes from. Rename before it reaches class names, scene files, and asset paths.
+**The mothership is the Aegis.** The Aegis Warden takes its name from the ship, which is the right direction for the borrowing — a support unit named for the vessel that projects the fleet's protection. Worth watching only if a second Aegis-prefixed unit appears; two is a lineage, three is a muddle.
+
+**The engine's own name is still open.** "Sovereign Spire" was chosen when it was a spire; it no longer fits a squat four-legged engine. "World Engine" is not available — it is the term from *Man of Steel*, which is also where the silhouette comes from. Rename before it reaches class names, scene files, and asset paths.
 
 **What keeps this homage rather than lift:** the film's engine terraforms, remaking a world into somewhere else. This one extracts and ships the proceeds home. That difference in purpose is the thing to keep visible in every description of it.
 
@@ -56,6 +58,25 @@ Nineteen worlds of the harvest have made landing routine — a thing the player 
 That is the payoff the design doc's invader POV has been earning the whole game. It should not flinch.
 
 It also matters that Earth is optional. A player whose quota fills early can turn for home and never see this. Which means the cutscene is the consequence of a deliberate choice to take Earth anyway — and that makes it land harder than any mandatory opening could.
+
+### Built timing
+
+The grey-box sequence runs **20 seconds**, skippable by any input:
+
+| Beat | Duration | Ends at |
+|---|---|---|
+| Descent | 7.0s | 7.0 |
+| Settle | 3.0s | 10.0 |
+| Silence | 4.5s | 14.5 |
+| Wake | 5.5s | 20.0 |
+
+Two ten-second clips fit this exactly. `CinematicPlayer` plays a queue of video
+clips full-screen in place of the grey box when any are assigned; with none, the
+grey box stands in. Both paths end at the same gate, so the mission does not
+care which ran.
+
+Skip is not optional. This plays at the start of a mission the player may retry
+a dozen times.
 
 ### Producing it without an art team
 

@@ -18,18 +18,21 @@ extends Node3D
 
 @export var spire: Node3D
 @export var camera_rig: CameraRig
+## Optional. When it holds clips, they play instead of the grey box and this
+## script becomes a fallback. The mission gate does not care which ran.
+@export var cinematic: CinematicPlayer
 
 @export_group("Beats")
 ## How high the Spire starts. Kept low enough that most of the fall is on
 ## screen: at this tilt an object at height h sits h * cos(55°) above its ground
 ## position, so a great height means it is out of frame until the last instant.
-@export var descent_height: float = 62.0
-@export var descent_time: float = 2.8
+@export var descent_height: float = 96.0
+@export var descent_time: float = 7.0
 ## Dust and debris settling. Nothing else happens.
-@export var settle_time: float = 1.1
+@export var settle_time: float = 3.0
 ## Held silence before the engine wakes. The most important number here.
-@export var silence_time: float = 1.6
-@export var wake_time: float = 2.0
+@export var silence_time: float = 4.5
+@export var wake_time: float = 5.5
 
 @export_group("Framing")
 ## Wide for the fall, so the descent is visible rather than a blur arriving.
@@ -57,6 +60,7 @@ var _resting_height: float = 0.0
 
 
 func _ready() -> void:
+	set_process_unhandled_input(false)
 	shockwave.visible = false
 	dust.visible = false
 	entry_glow.visible = false
@@ -67,8 +71,37 @@ func _on_mission_started() -> void:
 	if spire == null or GameCommands.is_landed():
 		return
 	_resting_height = spire.position.y
+
+	# Footage wins when it exists. The grey box is the stand-in, not the
+	# fallback of last resort — both end at the same gate.
+	if cinematic != null and cinematic.has_clips():
+		_running = true
+		cinematic.finished.connect(_on_cinematic_finished, CONNECT_ONE_SHOT)
+		cinematic.play()
+		return
+
 	_running = true
+	set_process_unhandled_input(true)
 	_run()
+
+
+func _on_cinematic_finished() -> void:
+	_running = false
+	spire.position.y = _resting_height
+	GameCommands.submit(GameCommandBus.Command.SET_LANDING_PHASE, {
+		"phase": GameCommandBus.LandingPhase.DONE,
+	})
+
+
+## Twenty seconds is a long time on a mission the player may retry. Any input
+## ends it.
+func _unhandled_input(event: InputEvent) -> void:
+	if not _running:
+		return
+	var pressed: bool = (event is InputEventKey and event.pressed) 		or (event is InputEventMouseButton and event.pressed) 		or (event is InputEventScreenTouch and event.pressed)
+	if pressed:
+		get_viewport().set_input_as_handled()
+		abort()
 
 
 ## Skips to the end. Anything that could leave the player stuck on an
@@ -77,6 +110,9 @@ func abort() -> void:
 	if not _running:
 		return
 	_running = false
+	set_process_unhandled_input(false)
+	if camera_rig != null:
+		camera_rig.set_zoom(camera_rig.default_zoom)
 	if spire != null:
 		spire.position.y = _resting_height
 	shockwave.visible = false
@@ -109,6 +145,7 @@ func _run() -> void:
 		return
 
 	_running = false
+	set_process_unhandled_input(false)
 	GameCommands.submit(GameCommandBus.Command.SET_LANDING_PHASE, {
 		"phase": GameCommandBus.LandingPhase.DONE,
 	})

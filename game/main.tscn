@@ -1,4 +1,4 @@
-[gd_scene load_steps=40 format=3 uid="uid://5pprr0vv13ss"]
+[gd_scene load_steps=41 format=3 uid="uid://5pprr0vv13ss"]
 
 [ext_resource type="Script" path="res://scripts/mission.gd" id="1_mission"]
 [ext_resource type="Script" path="res://scripts/nav_path_service.gd" id="2_path"]
@@ -31,6 +31,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/landing_descent.wav" id="29_descent"]
 [ext_resource type="AudioStream" path="res://assets/audio/landing_impact.wav" id="30_land"]
 [ext_resource type="AudioStream" path="res://assets/audio/engine_wake.wav" id="31_wake"]
+[ext_resource type="PackedScene" path="res://scenes/cinematic_player.tscn" id="32_cine"]
 
 [sub_resource type="Environment" id="Environment_battle"]
 background_mode = 1
@@ -176,9 +177,12 @@ camera = NodePath("../Camera")
 camera_rig = NodePath("../CameraRig")
 placement_marker = NodePath("../PlacementMarker")
 
-[node name="LandingSequence" parent="." node_paths=PackedStringArray("spire", "camera_rig") instance=ExtResource("28_landing")]
+[node name="CinematicPlayer" parent="." instance=ExtResource("32_cine")]
+
+[node name="LandingSequence" parent="." node_paths=PackedStringArray("spire", "camera_rig", "cinematic") instance=ExtResource("28_landing")]
 spire = NodePath("../BaseStructure")
 camera_rig = NodePath("../CameraRig")
+cinematic = NodePath("../CinematicPlayer")
 
 [node name="Abilities" type="Node" parent="."]
 script = ExtResource("25_ability")

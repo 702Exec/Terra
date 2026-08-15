@@ -39,3 +39,8 @@ desktop.ini
 
 *.bak
 .summer/
+
+# Cinematic masters. Generated footage iterates, and every revision would be a
+# permanent full copy in history. Keep masters here on disk, commit only the
+# build-ready .ogv under game/assets/cinematics/.
+/video/

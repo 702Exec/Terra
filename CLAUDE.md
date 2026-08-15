@@ -51,7 +51,9 @@ Everything below is built and verified running.
 
 **HUD** — wave countdown, base health, credits and income, minimap (bottom right, tap to jump), off-screen threat markers, upgrade panel, turret sell prompt.
 
-**Landing sequence** — `scripts/landing_sequence.gd`. The Spire falls, lands, the dust settles, silence holds, the engine wakes. Waves and extraction are both gated on `GameCommands.is_landed()`, so it is game state rather than presentation; a sequence that never completes is a soft-lock, which is why `abort()` exists. Roughly 7.5s end to end. Tune `silence_time` first — the gap is doing more work than the impact.
+**Landing sequence** — `scripts/landing_sequence.gd`, 20s end to end, skippable by any input. The Spire falls, lands, the dust settles, silence holds, the engine wakes. Waves and extraction are both gated on `GameCommands.is_landed()`, so it is game state rather than presentation; a sequence that never completes is a soft-lock, which is why `abort()` exists. Tune `silence_time` first — the gap does more work than the impact.
+
+**Cinematics** — `scripts/cinematic_player.gd`. Assign clips to `CinematicPlayer.clips` and they play full-screen instead of the grey-box landing; leave it empty and the grey box stands in. **Godot 4 plays Ogg Theora only**, and only from `res://` — masters in the repo-root `video/` folder are storage, invisible to the game.
 
 **Audio** — `scripts/audio_director.gd`, driven off bus signals. Placeholder synthesised tones in `assets/audio/`. Phase 5 replaces the files, not the wiring.
 
@@ -87,6 +89,7 @@ Everything below is built and verified running.
 - **Hand-written `.tscn` node exports need `node_paths=PackedStringArray("prop", ...)` on the node header**, or Godot never resolves the NodePath into a Node and the property is silently null.
 - **`Transform3D` in a `.tscn` stores its nine basis values as rows, not columns.** Getting this backwards transposes the basis and points the camera somewhere unintended.
 - **Headless runs cannot catch rendering bugs.** A clean headless run says nothing about what the camera sees. Capture a rendered frame before claiming anything is visible.
+- **`--headless --fixed-fps` decouples the game clock from real time.** The navmesh bake takes ~140ms of wall clock but the game clock races ahead, so anything gated on `enemy_paths_ready` looks broken in a short headless run and works fine windowed. Test bake-dependent behaviour windowed, or trigger the probe off the signal rather than a timestamp.
 - **Quitting while an audio cue is still playing reports leaked `AudioStreamWAV` instances.** Godot releases stream playbacks on the audio thread, which does not run again after quit, so the reference outlives the node however the players are stopped or freed. It is a shutdown-time report with no gameplay impact, it happens under a real audio driver as well as headless, and it is not worth chasing — the count simply tracks how many cues were in flight when you closed.
 
 ## Explicitly out of scope
