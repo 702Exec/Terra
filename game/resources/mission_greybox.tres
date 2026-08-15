@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MissionConfig" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/mission_config.gd" id="1_mission_config"]
+[ext_resource type="Resource" path="res://resources/turret_pulse.tres" id="2_turret_pulse"]
+[ext_resource type="Resource" path="res://resources/wave_standard.tres" id="3_wave_standard"]
+
+[resource]
+script = ExtResource("1_mission_config")
+base_max_health = 1000
+starting_credits = 100
+credits_per_second = 10.0
+turret_stats = ExtResource("2_turret_pulse")
+wave_config = ExtResource("3_wave_standard")
+battlefield_extent = 18.0
+turret_min_spacing = 2.0
+turret_min_base_distance = 4.5
+turret_min_spawn_distance = 5.0

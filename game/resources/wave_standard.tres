@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WaveConfig" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/wave_config.gd" id="1_wave_config"]
+[ext_resource type="Resource" path="res://resources/enemy_grunt.tres" id="2_enemy_grunt"]
+
+[resource]
+script = ExtResource("1_wave_config")
+enemy_stats = ExtResource("2_enemy_grunt")
+first_wave_count = 4
+count_growth = 2
+spawn_interval = 0.35
+first_wave_delay = 15.0
+wave_gap = 30.0
+wave_gap_shrink = 1.0
+min_wave_gap = 14.0
