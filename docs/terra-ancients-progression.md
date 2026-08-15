@@ -10,36 +10,71 @@
 2. **Twenty unique worlds was twenty biomes.** The design doc §5 caps this at five biome sets, deriving four worlds each, to cut art cost by roughly 75%. The good news: this planet list already clusters into the doc's five canonical biomes almost untouched.
 3. **Some science needed walking back.** Details in the notes column.
 
-The narrative spine is unchanged: real bodies, real materials, one unlock per world, Earth last.
+4. **Unlocks are keyed to world tier, not to a named world.** See [Unlock model](#unlock-model). The branching star map means a run visits a subset of these twenty, so binding an unlock to a specific world would make it unreachable on most routes.
+
+The narrative spine is unchanged: real bodies, real materials, Earth last.
 
 ---
 
-## Campaign table
+## World table
 
-| # | World | Biome | Resource | Unlock |
+These are nodes on the star map, not a running order. Tier sets both the yield and which unlock pool a clear draws from.
+
+| World | Tier | Biome | Resource | Yield |
 |:--|:--|:--|:--|:--|
-| 1 | Mars | Ashfall | Iron | **Sovereign Spire** + **Monolith Turret I** |
-| 2 | Mercury | Drift | Sodium, Iron | **Glimmer Drone** |
-| 3 | Enceladus | Rime | Water | **Aether Conduit** |
-| 4 | Ceres | Drift | Water, Iron | **Vanguard** |
-| 5 | Venus | Ashfall | Sulfur | **Refraction Forge** |
-| 6 | Psyche | Drift | Iron, Nickel | **Lattice Node** |
-| 7 | Titan | Rime | Methane, Nitrogen | **Monolith Turret II** |
-| 8 | Ganymede | Rime | Water, Silicates | **Resonance Core** |
-| 9 | Io | Ashfall | Sulfur | **Riftwalker** |
-| 10 | Europa | Rime | Water | **Aegis Warden** |
-| 11 | Callisto | Rime | Carbon, Iron | **Automaton Foundry** |
-| 12 | Triton | Rime | Nitrogen Ice | **Bulwark** |
-| 13 | Pluto | Rime | Methane Ice | **Monolith Turret III** |
-| 14 | Proxima Centauri b | Verdance | *Unsurveyed* | **Bastion Vault** |
-| 15 | Kepler-186f | Verdance | Carbon, Silicon | **Apex Strider** |
-| 16 | Gliese 581c | Verdance | Iron, Water | **Astral Shipyard** |
-| 17 | 55 Cancri e | Ashfall | Carbon, Graphite | **Eclipse** |
-| 18 | TRAPPIST-1e | Verdance | Water, Magnesium | **Grand Sanctuary** |
-| 19 | Kepler-22b | Verdance | Water, Sea Minerals | **Acolyte** |
-| 20 | **Earth** | Sol | **All elements** | **Avatar** + full fleet |
+| Mars | 1 | Ashfall | Iron | 5 |
+| Mercury | 1 | Drift | Sodium, Iron | 5 |
+| Enceladus | 1 | Rime | Water | 5 |
+| Ceres | 1 | Drift | Water, Iron | 5 |
+| Venus | 2 | Ashfall | Sulfur | 9 |
+| Psyche | 2 | Drift | Iron, Nickel | 9 |
+| Titan | 2 | Rime | Methane, Nitrogen | 9 |
+| Ganymede | 2 | Rime | Water, Silicates | 9 |
+| Io | 2 | Ashfall | Sulfur | 9 |
+| Europa | 3 | Rime | Water | 14 |
+| Callisto | 3 | Rime | Carbon, Iron | 14 |
+| Triton | 3 | Rime | Nitrogen Ice | 14 |
+| Pluto | 3 | Rime | Methane Ice | 14 |
+| Proxima Centauri b | 3 | Verdance | *Unsurveyed* | 14 |
+| Kepler-186f | 4 | Verdance | Carbon, Silicon | 20 |
+| Gliese 581c | 4 | Verdance | Iron, Water | 20 |
+| 55 Cancri e | 4 | Ashfall | Carbon, Graphite | 20 |
+| TRAPPIST-1e | 4 | Verdance | Water, Magnesium | 20 |
+| Kepler-22b | 4 | Verdance | Water, Sea Minerals | 20 |
+| **Earth** | Final | Sol | **All elements** | — |
 
-Combat capability now lands early: turret on world 1, economy on 2, production on 3, first fighting unit on 4.
+Five Tier 4 worlds at 20 each is exactly the 100-unit quota in five cycles, which is the expert run the design doc describes. Nine cycles spare, and a starter roster to do it with.
+
+---
+
+## Unlock model
+
+**You start with a base, a turret, and a worker** — the Sovereign Spire, Monolith Turret I, and the Glimmer Drone. That is the prototype already running, and it means world one is playable without unlocking anything first.
+
+**Clearing a world draws the next unlock from that world's tier pool.** Not from a list bound to the world itself.
+
+| Pool | Unlocks, in draw order |
+|:--|:--|
+| **Tier 1** | Aether Conduit → Vanguard → Refraction Forge → Lattice Node |
+| **Tier 2** | Monolith Turret II → Riftwalker → Resonance Core → Aegis Warden → Automaton Foundry |
+| **Tier 3** | Bulwark → Monolith Turret III → Bastion Vault → Apex Strider → Astral Shipyard |
+| **Tier 4** | Eclipse → Grand Sanctuary → Acolyte → *(two upgrade tiers, unassigned)* |
+| **Earth** | Avatar |
+
+### Why this works
+
+**No run collects everything.** Twenty unlocks against a fourteen-cycle budget means the roster you finish with is a consequence of the route you carved. That is replay value falling out of a constraint that already existed rather than a system added on top.
+
+**It sharpens the doc's central tension.** The safe route was already mathematically insufficient — all Tier 1 yields 70 against a quota of 100. Now it is *also* a roster failure: grinding low tiers fills the Tier 1 pool, which empties after four draws, and every clear after that gives you nothing. The cautious player arrives at the late game under-equipped as well as short. The punishment for playing safe becomes something the player feels every mission, not just arithmetic on the quota screen.
+
+**Hard worlds pay twice** — more yield and a better unlock — which is the right shape for a risk decision.
+
+### What still needs deciding
+
+- **Empty pools.** When a tier's pool is exhausted, a clear could convert to bonus yield, or to fleet-reserve credit. Something should happen; nothing is the wrong answer.
+- **Player choice within a pool.** Fixed draw order is simplest to build and to balance. Letting the player pick from two offered unlocks is more interesting and roughly doubles the balance surface. Worth prototyping only after the loop is proven.
+- **Tier assignment.** The table above is a first pass. Which specific world sits at which tier is pure tuning and does not affect the model.
+- **Allocation-screen purchases.** The design doc already spends fleet reserve on upgrades. Whether reserve can also buy unlocks outright is a separate lever, and stacking both may be one system too many.
 
 ---
 
@@ -61,76 +96,64 @@ Rime carries seven worlds and does the heaviest lifting. Titan is the odd one �
 
 ## World notes
 
-**1 — Mars** *(Ashfall, Iron)*
-Establish the beachhead. Command hub and one turret against dust storms and scavengers. This is the current prototype: base, turret, credits, waves from one lane.
+Each world's hook is its terrain and its lane geometry — the things that make it play differently. None of them name an unlock, because which unlock a clear grants depends on the tier pool, not the world.
 
-**2 — Mercury** *(Drift, Sodium & Iron)*
-Sodium is the honest resource here — Mercury has a well-documented sodium exosphere that trails behind the planet. Iron from the oversized core. Economy tutorial: the Glimmer Drone arrives and harvesting begins.
+**Mars** *(Tier 1 · Ashfall · Iron)*
+The rust-red deserts. Establish the beachhead against dust storms and scavengers. This is the current prototype: base, turret, credits, one approach lane.
 
-**3 — Enceladus** *(Rime, Water)*
-Siphon the cryovolcanic plumes at the south pole. Ground production unlocks. Optimize drone routes before the collection zones freeze over.
+**Mercury** *(Tier 1 · Drift · Sodium & Iron)*
+Sodium is the honest resource — Mercury has a well-documented sodium exosphere that trails behind the planet like a tail. Iron from the oversized core. Day-night terminator sweeps the map on a timer.
 
-**4 — Ceres** *(Drift, Water & Iron)*
-Low gravity, clay crust, water-ice mantle. First combat unit. Hold the extraction site against automated mining defenses.
+**Enceladus** *(Tier 1 · Rime · Water)*
+Siphon the south-polar cryovolcanic plumes. Collection zones freeze over on a cycle, so extraction points move during the mission.
 
-**5 — Venus** *(Ashfall, Sulfur)*
-Crushing pressure and sulfuric cloud decks. Upgrades arrive. The atmosphere degrades unpowered hulls, forcing power coverage decisions.
+**Ceres** *(Tier 1 · Drift · Water & Iron)*
+Low gravity, dark clay crust, water-ice mantle. Wide-open terrain with almost no natural chokepoints — the tutorial in building your own.
 
-**6 — Psyche** *(Drift, Iron & Nickel)*
-Exposed iron-nickel asteroid. Density measurements have been revised downward since the early "solid metal core" description, so treat it as metal-rich rather than a pure metal body. Silver dropped — no basis for it. Lattice Node unlocks: extend your buildable footprint or leave the far deposits undefended.
+**Venus** *(Tier 2 · Ashfall · Sulfur)*
+Crushing pressure and sulfuric cloud decks. The atmosphere degrades unpowered hulls, so power coverage becomes a defensive decision rather than an economic one.
 
-**7 — Titan** *(Rime, Methane & Nitrogen)*
-Pump the hydrocarbon seas — Kraken Mare, Ligeia Mare. Turret tier II. A pure holdout mission: protect fixed siphons on a map with more approach lanes than you can cover.
+**Psyche** *(Tier 2 · Drift · Iron & Nickel)*
+Exposed iron-nickel asteroid. Density measurements have been revised down since the early "solid metal core" description, so treat it as metal-rich rather than a pure metal body. Silver dropped — no basis for it. Deposits sit outside any defensible perimeter.
 
-**8 — Ganymede** *(Rime, Water & Silicates)*
-Largest moon in the solar system, and the only one with its own magnetic field. Tier 2 tech from data recovered in the ice.
+**Titan** *(Tier 2 · Rime · Methane & Nitrogen)*
+Pump the hydrocarbon seas — Kraken Mare, Ligeia Mare. A pure holdout: fixed siphons on a map with more approach lanes than you can cover.
 
-**9 — Io** *(Ashfall, Sulfur)*
-The most volcanically active body known. Ranged anti-air arrives, and so does the first air wave. Lava resurfacing closes and opens lanes mid-mission.
+**Ganymede** *(Tier 2 · Rime · Water & Silicates)*
+Largest moon in the solar system and the only one with its own magnetic field. Ice labyrinths make the lanes long and winding, which rewards forward turrets.
 
-**10 — Europa** *(Rime, Water)*
-Drill the subsurface ocean. Aegis Warden unlocks — the first mission where you reshape the approach instead of only defending it.
+**Io** *(Tier 2 · Ashfall · Sulfur)*
+The most volcanically active body known. Lava resurfacing opens and closes lanes mid-mission — the map itself changes under you.
 
-**11 — Callisto** *(Rime, Carbon & Iron)*
-Ancient, heavily cratered, geologically dead. Heavy machine production opens.
+**Europa** *(Tier 3 · Rime · Water)*
+Drill the subsurface ocean. Cracked ice sheets divide the surface into natural corridors, the most chokepoint-friendly map in the set.
 
-**12 — Triton** *(Rime, Nitrogen Ice)*
-Retrograde orbit, nitrogen geysers, cantaloupe terrain. Armored waves begin; the Bulwark answers them.
+**Callisto** *(Tier 3 · Rime · Carbon & Iron)*
+Ancient, saturated with craters, geologically dead. Crater rims give elevation, which is where the Apex Strider's terrain stride earns its cost.
 
-**13 — Pluto** *(Rime, Methane Ice)*
-Nitrogen glaciers and the dark Cthulhu Macula. Turret tier III. Sensor-scrambling storms shorten your warning time before each wave.
+**Triton** *(Tier 3 · Rime · Nitrogen Ice)*
+Retrograde orbit, nitrogen geysers, cantaloupe terrain. Erupting vents damage anything parked on them, so static defense placement has an expiry.
 
-**14 — Proxima Centauri b** *(Verdance, unsurveyed)*
-Only a minimum mass is measured; surface composition is unknown, and the planet sits under an active flare star. Lean into that — this is the survey mission, where the harvest yield is unknown before you commit. Mechanically interesting precisely because the doc's star map asks you to gamble on yield.
+**Pluto** *(Tier 3 · Rime · Methane Ice)*
+Nitrogen glaciers and the dark Cthulhu Macula. Sensor-scrambling storms cut the incoming-wave warning time, sometimes to nothing.
 
-**15 — Kepler-186f** *(Verdance, Carbon & Silicon)*
-First Earth-sized planet confirmed in a habitable zone. Apex Strider unlocks against the first true swarm waves.
+**Proxima Centauri b** *(Tier 3 · Verdance · unsurveyed)*
+Only a minimum mass is measured; surface composition is unknown, and it orbits an active flare star. Lean into that — the harvest yield is hidden until you commit, which is the one node on the map that gambles rather than prices.
 
-**16 — Gliese 581c** *(Verdance, Iron & Water)*
-A confirmed planet, though its early billing as habitable was reassessed — the current reading is a runaway greenhouse, closer to Venus than Earth. Tidally locked; harvest the terminator. Air production unlocks.
+**Kepler-186f** *(Tier 4 · Verdance · Carbon & Silicon)*
+First Earth-sized planet confirmed in a habitable zone. Dense red-tinted forest breaks line of sight, shortening every turret's effective range.
 
-**17 — 55 Cancri e** *(Ashfall, Carbon & Graphite)*
-The "diamond planet" framing came from a 2012 estimate of the host star's carbon-to-oxygen ratio that was revised downward soon after, so the diamond interior is no longer current thinking. What survives is solid and more useful: a lava world so hot its dayside is molten rock, carbon-rich, tidally locked. Harvest graphite from the terminator crust.
+**Gliese 581c** *(Tier 4 · Verdance · Iron & Water)*
+A confirmed planet, though its early billing as habitable was reassessed — the current reading is a runaway greenhouse, closer to Venus than Earth. Tidally locked, so you harvest the narrow terminator strip with your back to two hostile hemispheres.
 
-**18 — TRAPPIST-1e** *(Verdance, Water & Magnesium)*
-Rocky world in a seven-planet system, the most Earth-like of the set by density. Caster tech unlocks while you are attacked from three directions.
+**55 Cancri e** *(Tier 4 · Ashfall · Carbon & Graphite)*
+The "diamond planet" framing came from a 2012 estimate of the host star's carbon-to-oxygen ratio that was revised downward soon after, so the diamond interior is no longer current thinking. What survives is better: a lava world whose dayside is molten rock, carbon-rich and tidally locked. Harvest graphite from the terminator crust.
 
-**19 — Kepler-22b** *(Verdance, Water & Sea Minerals)*
-Radius suggests it may be a small Neptune rather than a rocky world, so treat the global ocean as an artistic choice rather than a finding. Acolytes arrive against airborne swarms.
+**TRAPPIST-1e** *(Tier 4 · Verdance · Water & Magnesium)*
+Rocky world in a compact seven-planet system, the most Earth-like of the set by density. Attacked from three directions from the opening wave.
 
-**20 — Earth** *(Sol, all elements)*
-The precise cocktail needed to reignite the homeworld, defended by a unified human coalition — orbital railguns, tactical air, kinetic options. Full fleet unlocked, Avatar manifested. Per the design doc, Earth is optional: if the quota fills before you arrive, the fleet can turn for home, and that choice is the ending branch.
+**Kepler-22b** *(Tier 4 · Verdance · Water & Sea Minerals)*
+Radius suggests a small Neptune rather than a rocky world, so treat the global ocean as an artistic choice rather than a finding. Buildable land is scarce; the base sits on platforms with water lanes between them.
 
----
-
-## Open question
-
-The design doc's star map is a **branching graph** where you cannot play every node in one run — that constraint is what turns difficulty into a player choice. This progression is a **linear sequence of twenty**, where each world hands you exactly one unlock.
-
-Those two structures conflict. If the route branches, the player skips worlds, and unlocks tied to specific worlds become unreachable. Three ways out:
-
-1. Unlocks attach to **tier reached**, not to the specific world — the branch stays real and the roster fills in regardless of route.
-2. Keep the linear twenty and drop the branching star map.
-3. Branch the route but let the **allocation screen** buy unlocks, so the fleet reserve decides your roster rather than the map.
-
-Option 1 preserves the most of both documents. This needs deciding before either system gets built, because it changes what the star map is for.
+**Earth** *(Final · Sol · all elements)*
+The precise cocktail needed to reignite the homeworld, defended by a unified human coalition — orbital railguns, tactical air, kinetic options. All four lanes from the opening wave. Per the design doc, Earth is optional: if the quota fills before you arrive, the fleet can turn for home, and that choice is the ending branch.
