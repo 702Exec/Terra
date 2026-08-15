@@ -128,24 +128,45 @@ func _place_at(screen_position: Vector2) -> void:
 	_has_hover = false
 
 
-## Tapping the Spire opens its upgrade panel instead of placing anything. The
-## structure layer is tested first so the building always wins over the ground
-## behind it.
+## Tapping a building does something other than place. The structure layer is
+## tested first so a building always wins over the ground behind it: the Spire
+## opens its upgrade panel, a turret offers a refund.
 func _try_open_upgrade_panel(screen_position: Vector2) -> bool:
 	var hit := _raycast(screen_position, structure_collision_mask)
 	if hit.is_empty():
+		_close_prompts()
 		return false
 	var collider := hit.get("collider") as Node
 	if collider == null:
 		return false
-	if collider.get_parent() != GameCommands.get_base_node():
+	var owner_node := collider.get_parent() as Node3D
+	if owner_node == null:
 		return false
 
-	var panel: Node = get_tree().get_first_node_in_group("upgrade_panel")
-	if panel == null:
-		return false
-	panel.call("toggle")
-	return true
+	if owner_node == GameCommands.get_base_node():
+		_close_sell_prompt()
+		var panel: Node = get_tree().get_first_node_in_group("upgrade_panel")
+		if panel != null:
+			panel.call("toggle")
+		return true
+
+	if owner_node.is_in_group("turret"):
+		var prompt: Node = get_tree().get_first_node_in_group("sell_prompt")
+		if prompt != null:
+			prompt.call("open_for", owner_node)
+		return true
+
+	return false
+
+
+func _close_prompts() -> void:
+	_close_sell_prompt()
+
+
+func _close_sell_prompt() -> void:
+	var prompt: Node = get_tree().get_first_node_in_group("sell_prompt")
+	if prompt != null:
+		prompt.call("close")
 
 
 ## Both halves of the rule, so the ghost never claims a placement the command

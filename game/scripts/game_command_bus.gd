@@ -17,6 +17,7 @@ enum Command {
 	SET_ENEMY_PATHS,
 	ADD_CREDITS,
 	PLACE_TURRET,
+	SELL_TURRET,
 	PURCHASE_UPGRADE,
 	SET_WAVE_COUNTDOWN,
 	WARN_WAVE,
@@ -41,6 +42,7 @@ signal wave_started(wave_number: int, enemy_count: int)
 signal enemy_spawned(enemy: Node3D)
 signal enemy_died(enemy: Node3D)
 signal turret_placed(turret: Node3D)
+signal turret_sold(world_position: Vector3, refund: int)
 signal upgrade_purchased(track_id: StringName, level: int)
 signal command_rejected(command: Command, reason: String)
 signal run_ended(final_wave: int)
@@ -94,6 +96,8 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 			return _add_credits(payload)
 		Command.PLACE_TURRET:
 			return _place_turret(payload)
+		Command.SELL_TURRET:
+			return _sell_turret(payload)
 		Command.PURCHASE_UPGRADE:
 			return _purchase_upgrade(payload)
 		Command.SET_WAVE_COUNTDOWN:
@@ -387,6 +391,33 @@ func _place_turret(payload: Dictionary) -> bool:
 	credits_changed.emit(_credits)
 	turret_placed.emit(turret)
 	return true
+
+
+## Refunds a placed turret at a fraction of its cost. The fraction is what stops
+## this being a free undo — repositioning should cost something, or placement
+## stops being a decision.
+func _sell_turret(payload: Dictionary) -> bool:
+	var turret := payload.get("turret", null) as Node3D
+	if turret == null or not is_instance_valid(turret):
+		return false
+	if turret.get_parent() != _turret_root:
+		command_rejected.emit(Command.SELL_TURRET, "not a placed turret")
+		return false
+
+	var refund: int = get_turret_refund()
+	var where: Vector3 = turret.global_position
+	turret.queue_free()
+
+	_credits += refund
+	credits_changed.emit(_credits)
+	turret_sold.emit(where, refund)
+	return true
+
+
+func get_turret_refund() -> int:
+	if _config == null:
+		return 0
+	return int(floorf(float(get_turret_cost()) * _config.turret_refund_fraction))
 
 
 func _purchase_upgrade(payload: Dictionary) -> bool:

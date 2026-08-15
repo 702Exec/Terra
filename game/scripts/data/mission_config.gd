@@ -37,3 +37,6 @@ extends Resource
 @export var turret_min_base_distance: float = 4.5
 @export var turret_min_spawn_distance: float = 5.0
 @export var turret_min_structure_distance: float = 3.0
+## Share of a turret's cost returned when it is sold. Below 1.0 on purpose —
+## a free undo makes placement a doodle rather than a decision.
+@export_range(0.0, 1.0) var turret_refund_fraction: float = 0.65

@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/threat_markers.gd" id="2_threat"]
 [ext_resource type="Script" path="res://scripts/minimap.gd" id="3_minimap"]
 [ext_resource type="Script" path="res://scripts/upgrade_panel.gd" id="4_upgrade"]
+[ext_resource type="Script" path="res://scripts/sell_prompt.gd" id="5_sell"]
 
 [sub_resource type="StyleBoxFlat" id="Style_panel"]
 content_margin_left = 24.0
@@ -146,6 +147,51 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "CLOSE"
+
+[node name="SellPrompt" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -150.0
+offset_right = 190.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("Style_panel")
+script = ExtResource("5_sell")
+
+[node name="Layout" type="VBoxContainer" parent="SellPrompt"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SellTitle" type="Label" parent="SellPrompt/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "PULSE TURRET"
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="SellPrompt/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ConfirmButton" type="Button" parent="SellPrompt/Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SELL"
+
+[node name="CancelButton" type="Button" parent="SellPrompt/Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "CANCEL"
 
 [node name="RunOverLabel" type="Label" parent="."]
 unique_name_in_owner = true

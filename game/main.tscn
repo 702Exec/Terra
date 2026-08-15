@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://5pprr0vv13ss"]
+[gd_scene load_steps=30 format=3 uid="uid://5pprr0vv13ss"]
 
 [ext_resource type="Script" path="res://scripts/mission.gd" id="1_mission"]
 [ext_resource type="Script" path="res://scripts/nav_path_service.gd" id="2_path"]
@@ -14,6 +14,15 @@
 [ext_resource type="PackedScene" path="res://scenes/lane_spawn.tscn" id="12_lane"]
 [ext_resource type="PackedScene" path="res://scenes/extractor.tscn" id="13_extractor"]
 [ext_resource type="Script" path="res://scripts/camera_rig.gd" id="14_rig"]
+[ext_resource type="Script" path="res://scripts/battlefield.gd" id="15_field"]
+[ext_resource type="Script" path="res://scripts/audio_director.gd" id="16_audio"]
+[ext_resource type="AudioStream" path="res://assets/audio/wave_warning.wav" id="17_warn"]
+[ext_resource type="AudioStream" path="res://assets/audio/under_attack.wav" id="18_attack"]
+[ext_resource type="AudioStream" path="res://assets/audio/structure_lost.wav" id="19_lost"]
+[ext_resource type="AudioStream" path="res://assets/audio/upgrade_ready.wav" id="20_upgrade"]
+[ext_resource type="AudioStream" path="res://assets/audio/turret_placed.wav" id="21_placed"]
+[ext_resource type="AudioStream" path="res://assets/audio/turret_sold.wav" id="22_sold"]
+[ext_resource type="AudioStream" path="res://assets/audio/run_over.wav" id="23_over"]
 
 [sub_resource type="Environment" id="Environment_battle"]
 background_mode = 1
@@ -63,15 +72,22 @@ size = 40.0
 script = ExtResource("14_rig")
 camera = NodePath("../Camera")
 camera_offset = Vector3(0, 30, 21)
-default_zoom = 26.0
+default_zoom = 32.0
 min_zoom = 18.0
-max_zoom = 56.0
-zoom_step = 3.0
-keyboard_pan_speed = 34.0
-map_half_extent = 32.0
+max_zoom = 124.0
+zoom_step = 6.0
+keyboard_pan_speed = 60.0
+map_half_extent = 72.0
 
-[node name="Battlefield" type="NavigationRegion3D" parent="."]
+[node name="Battlefield" type="NavigationRegion3D" parent="." node_paths=PackedStringArray("ground_mesh", "ground_collision", "lane_root", "structure_root")]
 navigation_mesh = SubResource("NavMesh_battlefield")
+script = ExtResource("15_field")
+ground_mesh = NodePath("Ground/Mesh")
+ground_collision = NodePath("Ground/Collision")
+lane_root = NodePath("../Lanes")
+structure_root = NodePath("../Structures")
+lane_inset = 6.0
+extractor_lane_fraction = 0.6
 
 [node name="Ground" type="StaticBody3D" parent="Battlefield"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
@@ -104,7 +120,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 0, 0)
 [node name="ExtractorNorth" parent="Structures" instance=ExtResource("13_extractor")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -19)
 
-[node name="ExtractorWest" parent="Structures" instance=ExtResource("13_extractor")]
+[node name="ExtractorSouth" parent="Structures" instance=ExtResource("13_extractor")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0, 0)
 
 [node name="Turrets" type="Node3D" parent="."]
@@ -146,5 +162,15 @@ script = ExtResource("5_controller")
 camera = NodePath("../Camera")
 camera_rig = NodePath("../CameraRig")
 placement_marker = NodePath("../PlacementMarker")
+
+[node name="Audio" type="Node" parent="."]
+script = ExtResource("16_audio")
+wave_warning = ExtResource("17_warn")
+under_attack = ExtResource("18_attack")
+structure_lost = ExtResource("19_lost")
+upgrade_ready = ExtResource("20_upgrade")
+turret_placed = ExtResource("21_placed")
+turret_sold = ExtResource("22_sold")
+run_over = ExtResource("23_over")
 
 [node name="HUD" parent="." instance=ExtResource("11_hud")]
