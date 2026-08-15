@@ -18,6 +18,9 @@ extends Node3D
 @export var base_structure: Node3D
 @export var enemy_root: Node3D
 @export var turret_root: Node3D
+## Destructible player structures placed on the map — extractors. Their children
+## are registered with the bus in scene order.
+@export var structure_root: Node3D
 
 @export_group("Prefabs")
 @export var enemy_scene: PackedScene
@@ -30,6 +33,7 @@ func _ready() -> void:
 		"base": base_structure,
 		"enemy_root": enemy_root,
 		"turret_root": turret_root,
+		"structure_root": structure_root,
 		"enemy_scene": enemy_scene,
 		"turret_scene": turret_scene,
 	})

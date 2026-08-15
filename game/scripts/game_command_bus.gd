@@ -22,6 +22,7 @@ enum Command {
 	SPAWN_ENEMY,
 	DAMAGE_ENEMY,
 	DAMAGE_BASE,
+	DAMAGE_STRUCTURE,
 	END_RUN,
 }
 
@@ -29,6 +30,9 @@ signal mission_started()
 signal enemy_paths_ready(paths: Array[PackedVector3Array])
 signal credits_changed(credits: int)
 signal base_health_changed(current_health: int, max_health: int)
+signal structure_damaged(structure: Node3D, current_health: int, max_health: int)
+signal structure_destroyed(structure: Node3D)
+signal income_changed(credits_per_second: float)
 signal wave_incoming(wave_number: int, lane_names: PackedStringArray)
 signal wave_started(wave_number: int, enemy_count: int)
 signal enemy_spawned(enemy: Node3D)
@@ -61,6 +65,12 @@ var _lane_names: PackedStringArray = PackedStringArray()
 ## mission is owned by one authority.
 var _enemy_health: Dictionary[Node3D, int] = {}
 
+## Destructible player structures — extractors today. Held as a cached array as
+## well as a health map because every living enemy scans it every frame looking
+## for something to attack on the way past, and `get_nodes_in_group` allocates.
+var _structures: Array[Node3D] = []
+var _structure_health: Dictionary[Node3D, int] = {}
+
 
 # --- Submission ---------------------------------------------------------------
 
@@ -86,6 +96,8 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 			return _damage_enemy(payload)
 		Command.DAMAGE_BASE:
 			return _damage_base(payload)
+		Command.DAMAGE_STRUCTURE:
+			return _damage_structure(payload)
 		Command.END_RUN:
 			return _end_run()
 	return false
@@ -151,6 +163,9 @@ func can_place_turret(world_position: Vector3) -> bool:
 				continue
 			if _flat_distance(world_position, placed.global_position) < _config.turret_min_spacing:
 				return false
+	for structure: Node3D in _structures:
+		if _flat_distance(world_position, structure.global_position) < _config.turret_min_structure_distance:
+			return false
 	return true
 
 
@@ -179,6 +194,25 @@ func get_base_node() -> Node3D:
 	return _base
 
 
+## Live destructible structures. Returned as the cached array rather than a
+## fresh one — enemies read this every frame and must not allocate.
+func get_attackable_structures() -> Array[Node3D]:
+	return _structures
+
+
+func get_structure_health(structure: Node3D) -> int:
+	return _structure_health.get(structure, 0)
+
+
+## Base trickle plus whatever the surviving extractors are producing. Losing a
+## forward node is meant to be felt in the credit counter, not just on the map.
+func get_income_per_second() -> float:
+	if _config == null:
+		return 0.0
+	return _config.base_credits_per_second \
+		+ _config.extractor_credits_per_second * float(_structures.size())
+
+
 # --- Command handlers ---------------------------------------------------------
 
 func _begin_mission(payload: Dictionary) -> bool:
@@ -198,6 +232,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 	_enemy_health.clear()
 	_enemy_paths = []
 	_lane_names = PackedStringArray()
+	_register_structures(payload.get("structure_root", null) as Node3D)
 	_wave_number = 0
 	_credits = _config.starting_credits
 	_base_health = _config.base_max_health
@@ -206,7 +241,23 @@ func _begin_mission(payload: Dictionary) -> bool:
 	mission_started.emit()
 	credits_changed.emit(_credits)
 	base_health_changed.emit(_base_health, _config.base_max_health)
+	income_changed.emit(get_income_per_second())
+	for structure: Node3D in _structures:
+		structure_damaged.emit(structure, _structure_health[structure], _config.extractor_max_health)
 	return true
+
+
+func _register_structures(structure_root: Node3D) -> void:
+	_structures = []
+	_structure_health.clear()
+	if structure_root == null:
+		return
+	for child: Node in structure_root.get_children():
+		var structure := child as Node3D
+		if structure == null:
+			continue
+		_structures.append(structure)
+		_structure_health[structure] = _config.extractor_max_health
 
 
 func _set_enemy_paths(payload: Dictionary) -> bool:
@@ -326,6 +377,27 @@ func _damage_base(payload: Dictionary) -> bool:
 	base_health_changed.emit(_base_health, _config.base_max_health)
 	if _base_health == 0:
 		_end_run()
+	return true
+
+
+func _damage_structure(payload: Dictionary) -> bool:
+	var structure := payload.get("structure", null) as Node3D
+	var amount: int = int(payload.get("amount", 0))
+	if structure == null or amount <= 0 or not _structure_health.has(structure):
+		return false
+
+	var remaining: int = maxi(0, _structure_health[structure] - amount)
+	_structure_health[structure] = remaining
+	structure_damaged.emit(structure, remaining, _config.extractor_max_health)
+	if remaining > 0:
+		return true
+
+	# The node stays in the scene as a wreck; it just stops being a target and
+	# stops paying out.
+	_structure_health.erase(structure)
+	_structures.erase(structure)
+	structure_destroyed.emit(structure)
+	income_changed.emit(get_income_per_second())
 	return true
 
 

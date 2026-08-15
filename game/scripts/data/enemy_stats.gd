@@ -13,6 +13,10 @@ extends Resource
 @export var attack_interval: float = 1.0
 ## How close the enemy has to get to the base before it stops and attacks.
 @export var contact_range: float = 3.6
+## How far off its lane an enemy will divert to tear down a player structure.
+## Wide enough that a node sitting in the lane is reliably attacked, narrow
+## enough that one built well off the lane is genuinely safer.
+@export var structure_aggro_range: float = 4.5
 ## Random lateral spread applied to the shared path so a wave reads as a mass
 ## rather than a single-file queue.
 @export var lane_spread: float = 2.5

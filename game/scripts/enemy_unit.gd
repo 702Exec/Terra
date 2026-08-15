@@ -26,6 +26,8 @@ var target_base: Node3D = null
 var _path_index: int = 0
 var _lane_offset: Vector3 = Vector3.ZERO
 var _in_contact: bool = false
+## What this unit is currently chewing on: null means the base.
+var _structure_target: Node3D = null
 
 const ARRIVAL_EPSILON: float = 0.25
 
@@ -49,18 +51,33 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _in_contact:
+		# A structure under attack can die under someone else's fire; when it
+		# does, resume the walk rather than standing over the wreck.
+		if _structure_target != null and not _is_target_live(_structure_target):
+			_leave_contact()
 		return
+
+	# Anything of the player's standing near the lane gets torn down on the way
+	# past. This is what makes a forward extractor genuinely exposed while the
+	# lane solve stays untouched.
+	var structure: Node3D = _nearest_structure_in_reach()
+	if structure != null:
+		_enter_contact(structure)
+		return
+
 	if target_base != null and _flat_distance(global_position, target_base.global_position) <= stats.contact_range:
-		_enter_contact()
+		_enter_contact(null)
 		return
 	if _path_index >= path.size():
-		_enter_contact()
+		_enter_contact(null)
 		return
 
 	var offset: Vector3 = _waypoint(_path_index) - global_position
 	offset.y = 0.0
 	if offset.length() <= ARRIVAL_EPSILON:
 		_path_index += 1
+		if _path_index >= path.size():
+			_enter_contact(null)
 		return
 
 	var direction: Vector3 = offset.normalized()
@@ -90,13 +107,43 @@ func _advance_to_nearest_waypoint() -> void:
 	_path_index = best_index
 
 
-func _enter_contact() -> void:
+## The cached structure list comes straight off the bus, so this costs a handful
+## of distance checks per enemy per frame with no allocation.
+func _nearest_structure_in_reach() -> Node3D:
+	var nearest: Node3D = null
+	var nearest_distance: float = stats.structure_aggro_range
+	for structure: Node3D in GameCommands.get_attackable_structures():
+		if not is_instance_valid(structure):
+			continue
+		var distance: float = _flat_distance(global_position, structure.global_position)
+		if distance <= nearest_distance:
+			nearest_distance = distance
+			nearest = structure
+	return nearest
+
+
+func _is_target_live(structure: Node3D) -> bool:
+	if not is_instance_valid(structure):
+		return false
+	return GameCommands.get_attackable_structures().has(structure)
+
+
+## `structure` of null means the target is the base, which ends the walk.
+func _enter_contact(structure: Node3D) -> void:
 	if _in_contact:
 		return
 	_in_contact = true
-	_path_index = path.size()
+	_structure_target = structure
+	if structure == null:
+		_path_index = path.size()
 	_strike()
 	attack_timer.start()
+
+
+func _leave_contact() -> void:
+	_in_contact = false
+	_structure_target = null
+	attack_timer.stop()
 
 
 func _on_attack_timer_timeout() -> void:
@@ -104,6 +151,13 @@ func _on_attack_timer_timeout() -> void:
 
 
 func _strike() -> void:
+	if _structure_target != null:
+		GameCommands.submit(GameCommandBus.Command.DAMAGE_STRUCTURE, {
+			"structure": _structure_target,
+			"amount": stats.contact_damage,
+			"source": self,
+		})
+		return
 	if target_base == null:
 		return
 	GameCommands.submit(GameCommandBus.Command.DAMAGE_BASE, {

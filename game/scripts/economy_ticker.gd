@@ -1,17 +1,20 @@
 class_name EconomyTicker
 extends Node
 
-## Trickles credits in at a fixed rate so placement is a real choice — waiting
-## for a second turret always costs you something.
+## Pays out the mission's income on a fixed tick.
 ##
-## A timer rather than a _process accumulator: the rate is coarse enough that
-## ten ticks a second is indistinguishable from sixty, and it keeps the economy
-## off the frame loop.
+## The rate is not a constant — it is the base trickle plus whatever extractors
+## are still standing, read from the bus each tick. That is what makes losing a
+## forward node hurt twice: once on the map, and again for the rest of the
+## mission in everything you cannot afford to rebuild.
+##
+## A timer rather than a _process accumulator: ten ticks a second is
+## indistinguishable from sixty at this granularity and keeps the economy off
+## the frame loop.
 
 @onready var tick_timer: Timer = $TickTimer
 
 var _fractional_credits: float = 0.0
-var _credits_per_second: float = 0.0
 
 
 func _ready() -> void:
@@ -21,18 +24,14 @@ func _ready() -> void:
 
 
 func _on_mission_started() -> void:
-	var config: MissionConfig = GameCommands.get_mission_config()
-	if config == null:
-		return
-	_credits_per_second = config.credits_per_second
 	_fractional_credits = 0.0
 	tick_timer.start()
 
 
 func _on_tick() -> void:
-	# Accumulated as a float and paid out in whole credits, so a non-integer
-	# rate still averages out correctly instead of rounding away every tick.
-	_fractional_credits += _credits_per_second * tick_timer.wait_time
+	# Accumulated as a float and paid out in whole credits, so a fractional rate
+	# still averages out correctly instead of rounding away every tick.
+	_fractional_credits += GameCommands.get_income_per_second() * tick_timer.wait_time
 	var payout: int = int(floorf(_fractional_credits))
 	if payout <= 0:
 		return

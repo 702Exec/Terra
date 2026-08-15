@@ -9,7 +9,15 @@ extends Resource
 
 @export_group("Economy")
 @export var starting_credits: int = 100
-@export var credits_per_second: float = 10.0
+## Trickle from the base alone. Deliberately not enough to hold the line — it
+## keeps a player who has lost every extractor alive rather than comfortable.
+@export var base_credits_per_second: float = 4.0
+## Added per surviving extractor. This is where the real income comes from, and
+## why a forward node is worth defending.
+@export var extractor_credits_per_second: float = 6.0
+
+@export_group("Extractors")
+@export var extractor_max_health: int = 500
 
 @export_group("Loadout")
 @export var turret_stats: TurretStats
@@ -21,3 +29,4 @@ extends Resource
 @export var turret_min_spacing: float = 2.0
 @export var turret_min_base_distance: float = 4.5
 @export var turret_min_spawn_distance: float = 5.0
+@export var turret_min_structure_distance: float = 3.0

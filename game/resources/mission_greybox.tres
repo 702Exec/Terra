@@ -8,10 +8,13 @@
 script = ExtResource("1_mission_config")
 base_max_health = 1000
 starting_credits = 100
-credits_per_second = 10.0
+base_credits_per_second = 4.0
+extractor_credits_per_second = 6.0
+extractor_max_health = 500
 turret_stats = ExtResource("2_turret_pulse")
 wave_config = ExtResource("3_wave_standard")
-battlefield_extent = 18.0
+battlefield_extent = 30.0
 turret_min_spacing = 2.0
 turret_min_base_distance = 4.5
 turret_min_spawn_distance = 5.0
+turret_min_structure_distance = 3.0

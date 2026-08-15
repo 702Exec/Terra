@@ -1,0 +1,31 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/extractor.gd" id="1_extractor"]
+
+[sub_resource type="StandardMaterial3D" id="Material_extractor"]
+albedo_color = Color(1, 0.78, 0.25, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_extractor"]
+size = Vector3(3, 2.2, 3)
+
+[sub_resource type="StandardMaterial3D" id="Material_ring"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.78, 0.25, 0.35)
+
+[sub_resource type="TorusMesh" id="Mesh_ring"]
+inner_radius = 2.4
+outer_radius = 2.7
+
+[node name="Extractor" type="Node3D"]
+script = ExtResource("1_extractor")
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+material_override = SubResource("Material_extractor")
+mesh = SubResource("Mesh_extractor")
+
+[node name="StatusRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+material_override = SubResource("Material_ring")
+mesh = SubResource("Mesh_ring")

@@ -26,6 +26,8 @@ func _ready() -> void:
 	warning_label.visible = false
 	GameCommands.mission_started.connect(_on_mission_started)
 	GameCommands.wave_incoming.connect(_on_wave_incoming)
+	GameCommands.income_changed.connect(_on_income_changed)
+	GameCommands.structure_destroyed.connect(_on_structure_destroyed)
 	GameCommands.credits_changed.connect(_on_credits_changed)
 	GameCommands.base_health_changed.connect(_on_base_health_changed)
 	GameCommands.wave_started.connect(_on_wave_started)
@@ -45,13 +47,25 @@ func _on_base_health_changed(current_health: int, max_health: int) -> void:
 
 
 func _on_credits_changed(credits: int) -> void:
-	credits_label.text = "CREDITS  %d" % credits
+	credits_label.text = "CREDITS  %d   (+%.0f/s)" % [credits, GameCommands.get_income_per_second()]
 	var cost: int = GameCommands.get_turret_cost()
 	placement_label.text = "Click the ground to place a turret  ·  %d credits" % cost
 	placement_label.add_theme_color_override(
 		"font_color",
 		AFFORDABLE_COLOR if credits >= cost else UNAFFORDABLE_COLOR
 	)
+
+
+func _on_income_changed(_credits_per_second: float) -> void:
+	_on_credits_changed(GameCommands.get_credits())
+
+
+## Losing a forward node is the loudest thing that can happen short of the base
+## falling, so it borrows the same banner.
+func _on_structure_destroyed(_structure: Node3D) -> void:
+	warning_label.text = "EXTRACTOR LOST  —  INCOME %.0f/s" % GameCommands.get_income_per_second()
+	warning_label.visible = true
+	_hold_then_fade()
 
 
 ## The base calling out where the next wave is coming from. Text rather than a
@@ -61,7 +75,10 @@ func _on_wave_incoming(wave_number: int, lane_names: PackedStringArray) -> void:
 	var where: String = " · ".join(lane_names) if not lane_names.is_empty() else "ALL SIDES"
 	warning_label.text = "⚠  WAVE %d INCOMING — %s" % [wave_number, where]
 	warning_label.visible = true
+	_hold_then_fade()
 
+
+func _hold_then_fade() -> void:
 	if _warning_tween != null and _warning_tween.is_valid():
 		_warning_tween.kill()
 	warning_label.modulate.a = 1.0

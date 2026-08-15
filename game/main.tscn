@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://5pprr0vv13ss"]
+[gd_scene load_steps=20 format=3 uid="uid://5pprr0vv13ss"]
 
 [ext_resource type="Script" path="res://scripts/mission.gd" id="1_mission"]
 [ext_resource type="Script" path="res://scripts/nav_path_service.gd" id="2_path"]
@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" path="res://scenes/placement_marker.tscn" id="10_marker"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="11_hud"]
 [ext_resource type="PackedScene" path="res://scenes/lane_spawn.tscn" id="12_lane"]
+[ext_resource type="PackedScene" path="res://scenes/extractor.tscn" id="13_extractor"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="14_rig"]
 
 [sub_resource type="Environment" id="Environment_battle"]
 background_mode = 1
@@ -24,22 +26,23 @@ tonemap_mode = 2
 albedo_color = Color(0.22, 0.4, 0.2, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_ground"]
-size = Vector3(40, 0.5, 40)
+size = Vector3(64, 0.5, 64)
 
 [sub_resource type="BoxShape3D" id="Shape_ground"]
-size = Vector3(40, 0.5, 40)
+size = Vector3(64, 0.5, 64)
 
 [sub_resource type="NavigationMesh" id="NavMesh_battlefield"]
 geometry_parsed_geometry_type = 1
 geometry_collision_mask = 1
 agent_radius = 0.75
 
-[node name="Main" type="Node3D" node_paths=PackedStringArray("base_structure", "enemy_root", "turret_root")]
+[node name="Main" type="Node3D" node_paths=PackedStringArray("base_structure", "enemy_root", "turret_root", "structure_root")]
 script = ExtResource("1_mission")
 config = ExtResource("6_config")
 base_structure = NodePath("BaseStructure")
 enemy_root = NodePath("Enemies")
 turret_root = NodePath("Turrets")
+structure_root = NodePath("Structures")
 enemy_scene = ExtResource("8_enemy")
 turret_scene = ExtResource("9_turret")
 
@@ -54,7 +57,18 @@ light_energy = 1.2
 transform = Transform3D(1, 0, 0, 0, 0.5735764, 0.819152, 0, -0.819152, 0.5735764, 0, 30, 21)
 projection = 1
 current = true
-size = 38.0
+size = 40.0
+
+[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("camera")]
+script = ExtResource("14_rig")
+camera = NodePath("../Camera")
+camera_offset = Vector3(0, 30, 21)
+default_zoom = 26.0
+min_zoom = 18.0
+max_zoom = 56.0
+zoom_step = 3.0
+keyboard_pan_speed = 34.0
+map_half_extent = 32.0
 
 [node name="Battlefield" type="NavigationRegion3D" parent="."]
 navigation_mesh = SubResource("NavMesh_battlefield")
@@ -74,16 +88,24 @@ shape = SubResource("Shape_ground")
 [node name="Lanes" type="Node3D" parent="."]
 
 [node name="LaneNorth" parent="Lanes" instance=ExtResource("12_lane")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -28)
 
 [node name="LaneSouth" parent="Lanes" instance=ExtResource("12_lane")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 28)
 
 [node name="LaneEast" parent="Lanes" instance=ExtResource("12_lane")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 0)
 
 [node name="LaneWest" parent="Lanes" instance=ExtResource("12_lane")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 0, 0)
+
+[node name="Structures" type="Node3D" parent="."]
+
+[node name="ExtractorNorth" parent="Structures" instance=ExtResource("13_extractor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -19)
+
+[node name="ExtractorWest" parent="Structures" instance=ExtResource("13_extractor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0, 0)
 
 [node name="Turrets" type="Node3D" parent="."]
 
@@ -100,7 +122,7 @@ base_standoff = 3.0
 
 [node name="WaveDirector" type="Node" parent="."]
 script = ExtResource("3_waves")
-spawn_scatter = 2.0
+spawn_scatter = 2.5
 
 [node name="WaveTimer" type="Timer" parent="WaveDirector"]
 one_shot = true
@@ -116,9 +138,10 @@ script = ExtResource("4_economy")
 [node name="TickTimer" type="Timer" parent="Economy"]
 wait_time = 0.1
 
-[node name="Controller" type="Node3D" parent="." node_paths=PackedStringArray("camera", "placement_marker")]
+[node name="Controller" type="Node3D" parent="." node_paths=PackedStringArray("camera", "camera_rig", "placement_marker")]
 script = ExtResource("5_controller")
 camera = NodePath("../Camera")
+camera_rig = NodePath("../CameraRig")
 placement_marker = NodePath("../PlacementMarker")
 
 [node name="HUD" parent="." instance=ExtResource("11_hud")]

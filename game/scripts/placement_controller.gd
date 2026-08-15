@@ -1,22 +1,31 @@
 class_name PlacementController
 extends Node3D
 
-## Turret placement input.
+## Pointer input: turret placement and camera panning off the same gesture.
 ##
-## Lineage: this is the camera raycast and ground-hit plumbing from the old
-## rts_controller.gd. Clicking the ground to place a structure is the same
-## operation the move order used to be, so the raycast is unchanged and only the
-## order path is retargeted. Unit selection is gone — the player builds and
-## places, they do not micro (CLAUDE.md, phase 0).
+## Lineage: the camera raycast and ground-hit plumbing is still the original
+## rts_controller.gd, retargeted from move orders to structure placement. Unit
+## selection is not a Phase 0 feature — the player builds and places.
 ##
-## Touch works through Godot's mouse emulation, so the same click action covers
-## both desktop and the planned mobile port.
+## Now that the map is larger than the screen, drag has to mean "pan" while tap
+## still means "place." Rather than reserving a second mouse button — which
+## touch does not have — this measures the gesture: move past a small threshold
+## and it becomes a pan, release inside it and it places. That reads identically
+## under Godot's mouse emulation on touch, so the mobile target keeps working.
 
 @export var camera: Camera3D
+@export var camera_rig: CameraRig
 @export var placement_marker: PlacementMarker
 
 @export var ground_collision_mask: int = 1
 
+## Pixels of travel before a press stops being a tap. Generous enough to
+## tolerate an unsteady finger, tight enough that deliberate taps land.
+@export var drag_threshold: float = 10.0
+
+var _pointer_down: bool = false
+var _dragging: bool = false
+var _press_position: Vector2 = Vector2.ZERO
 var _hover_position: Vector3 = Vector3.ZERO
 var _has_hover: bool = false
 
@@ -28,12 +37,55 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion:
-		_update_hover(event.position)
+	if event is InputEventMouseButton:
+		_handle_button(event as InputEventMouseButton)
+	elif event is InputEventMouseMotion:
+		_handle_motion(event as InputEventMouseMotion)
+
+
+func _handle_button(event: InputEventMouseButton) -> void:
+	if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		_zoom(1.0)
 		return
-	if event is InputEventMouseButton and event.pressed:
-		if event.is_action_pressed("place_structure"):
-			_place_at(event.position)
+	if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		_zoom(-1.0)
+		return
+	if not event.is_action_pressed("place_structure") and not event.is_action_released("place_structure"):
+		return
+
+	if event.pressed:
+		_pointer_down = true
+		_dragging = false
+		_press_position = event.position
+		return
+
+	# Release: a gesture that never became a drag is a placement.
+	if _pointer_down and not _dragging:
+		_place_at(event.position)
+	_pointer_down = false
+	_dragging = false
+
+
+func _handle_motion(event: InputEventMouseMotion) -> void:
+	if _pointer_down:
+		if not _dragging and event.position.distance_to(_press_position) > drag_threshold:
+			_dragging = true
+			if placement_marker != null:
+				placement_marker.hide_ghost()
+		if _dragging and camera_rig != null:
+			camera_rig.pan_by_screen_delta(event.relative)
+			_has_hover = false
+		return
+	_update_hover(event.position)
+
+
+func _zoom(steps: float) -> void:
+	if camera_rig == null:
+		return
+	camera_rig.zoom_by_steps(steps)
+	_has_hover = false
+	if placement_marker != null:
+		placement_marker.hide_ghost()
 
 
 func _update_hover(screen_position: Vector2) -> void:
