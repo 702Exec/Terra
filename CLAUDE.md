@@ -85,7 +85,7 @@ Everything below is built and verified running.
 - **Hand-written `.tscn` node exports need `node_paths=PackedStringArray("prop", ...)` on the node header**, or Godot never resolves the NodePath into a Node and the property is silently null.
 - **`Transform3D` in a `.tscn` stores its nine basis values as rows, not columns.** Getting this backwards transposes the basis and points the camera somewhere unintended.
 - **Headless runs cannot catch rendering bugs.** A clean headless run says nothing about what the camera sees. Capture a rendered frame before claiming anything is visible.
-- **Quitting headless mid-audio-cue reports leaked `AudioStreamWAV` instances.** That is the dummy audio driver, not a real leak — it does not occur under a real driver.
+- **Quitting while an audio cue is still playing reports leaked `AudioStreamWAV` instances.** Godot releases stream playbacks on the audio thread, which does not run again after quit, so the reference outlives the node however the players are stopped or freed. It is a shutdown-time report with no gameplay impact, it happens under a real audio driver as well as headless, and it is not worth chasing — the count simply tracks how many cues were in flight when you closed.
 
 ## Explicitly out of scope
 

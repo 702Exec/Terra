@@ -54,13 +54,14 @@ func _process(delta: float) -> void:
 	_attack_cooldown = maxf(0.0, _attack_cooldown - delta)
 
 
-## A cue still sounding when the game closes keeps its playback alive through
-## teardown, which Godot reports as a leaked resource. Silence them first.
+## Ordinary teardown hygiene. Note this does not silence Godot's leaked-resource
+## report when the game is closed mid-cue: playbacks are released on the audio
+## thread, which does not run again after quit, so the reference outlives the
+## node no matter what is done here. See the gotcha in CLAUDE.md.
 func _exit_tree() -> void:
 	for player: AudioStreamPlayer in _players:
-		if player.playing:
+		if is_instance_valid(player) and player.playing:
 			player.stop()
-		player.stream = null
 
 
 func _play(stream: AudioStream, volume_db: float = 0.0) -> void:

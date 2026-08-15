@@ -35,6 +35,11 @@ extends Resource
 @export var ranged: bool = false
 
 @export_group("Appearance")
+## Art override. Assign a PackedScene and the unit instances it instead of
+## building a grey capsule from the fields below; leave it null and you get the
+## grey box. Per archetype, so a bought pack can be introduced one unit at a
+## time rather than all at once.
+@export var visual_scene: PackedScene
 @export var body_color: Color = Color(0.85, 0.26, 0.2)
 @export var body_radius: float = 0.35
 @export var body_height: float = 1.4

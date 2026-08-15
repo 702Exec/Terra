@@ -48,9 +48,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 
-	visual.mesh = _mesh_for(stats)
-	visual.material_override = _material_for(stats)
-	visual.position.y = stats.body_height * 0.5
+	_build_visual()
 
 	var spread: float = stats.lane_spread
 	_lane_offset = Vector3(randf_range(-spread, spread), 0.0, randf_range(-spread, spread))
@@ -59,6 +57,20 @@ func _ready() -> void:
 	attack_timer.timeout.connect(_on_attack_timer_timeout)
 
 	_advance_to_nearest_waypoint()
+
+
+## Art if the archetype supplies it, grey box otherwise. The swap is one
+## branch, so nothing downstream cares which it got.
+func _build_visual() -> void:
+	if stats.visual_scene != null:
+		var art := stats.visual_scene.instantiate() as Node3D
+		if art != null:
+			visual.visible = false
+			add_child(art)
+			return
+	visual.mesh = _mesh_for(stats)
+	visual.material_override = _material_for(stats)
+	visual.position.y = stats.body_height * 0.5
 
 
 static func _mesh_for(archetype: EnemyStats) -> CapsuleMesh:
