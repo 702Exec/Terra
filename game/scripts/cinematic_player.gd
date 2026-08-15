@@ -22,12 +22,15 @@ extends CanvasLayer
 
 signal finished()
 
-@onready var video: VideoStreamPlayer = $Video
+@onready var frame: AspectRatioContainer = $Frame
+@onready var video: VideoStreamPlayer = $Frame/Video
 @onready var skip_hint: Label = $SkipHint
 
 var _index: int = 0
 var _playing: bool = false
 var _elapsed: float = 0.0
+## Cleared per clip; the stream's real size is only knowable once it plays.
+var _ratio_set: bool = false
 
 
 func _ready() -> void:
@@ -63,6 +66,14 @@ func skip() -> void:
 
 func _process(delta: float) -> void:
 	_elapsed += delta
+	# The frame takes its shape from the footage rather than the other way round,
+	# so a 2.33:1 clip letterboxes in a 16:9 window instead of being stretched to
+	# fill it. Only knowable once the stream is running.
+	if not _ratio_set:
+		var texture: Texture2D = video.get_video_texture()
+		if texture != null and texture.get_height() > 0:
+			frame.ratio = float(texture.get_width()) / float(texture.get_height())
+			_ratio_set = true
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -77,6 +88,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _start_clip() -> void:
+	_ratio_set = false
 	video.stream = clips[_index]
 	video.play()
 
