@@ -152,6 +152,9 @@ func _run() -> void:
 
 
 func _begin_descent() -> void:
+	GameCommands.submit(GameCommandBus.Command.SET_LANDING_PHASE, {
+		"phase": GameCommandBus.LandingPhase.DESCENT,
+	})
 	spire.position.y = _resting_height + descent_height
 	# The glow is the leg tips burning off atmosphere, so it rides down with the
 	# Spire rather than sitting at the point it is going to hit.

@@ -35,7 +35,12 @@ enum Command {
 ## The Spire's arrival. Waves and extraction both wait on DONE, so this is game
 ## state rather than presentation — the mission has not started until the engine
 ## is on the ground and awake.
-enum LandingPhase { DESCENT, IMPACT, WAKING, DONE }
+##
+## PENDING is "a landing is coming but has not begun". It exists so that the
+## audible beats belong to the grey-box sequence alone: a video cinematic goes
+## PENDING straight to DONE, and the game stays silent underneath footage that
+## carries its own soundtrack.
+enum LandingPhase { PENDING, DESCENT, IMPACT, WAKING, DONE }
 
 signal mission_started()
 signal landing_phase_changed(phase: LandingPhase)
@@ -350,7 +355,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 	_enemy_health.clear()
 	_enemy_stats.clear()
 	_strike_cooldown = 0.0
-	_landing_phase = LandingPhase.DESCENT if bool(payload.get("awaiting_landing", false)) else LandingPhase.DONE
+	_landing_phase = LandingPhase.PENDING if bool(payload.get("awaiting_landing", false)) else LandingPhase.DONE
 	_upgrade_levels.clear()
 	_enemy_paths = []
 	_lane_names = PackedStringArray()
@@ -361,12 +366,15 @@ func _begin_mission(payload: Dictionary) -> bool:
 	_base_health = _config.base_max_health
 	_run_active = true
 
+	# The starting phase is announced before mission_started, because
+	# mission_started is what kicks the landing sequence off — announce after and
+	# the sequence has already moved past PENDING, so nobody ever hears it.
+	landing_phase_changed.emit(_landing_phase)
 	mission_started.emit()
 	credits_changed.emit(_credits)
 	base_health_changed.emit(_base_health, _config.base_max_health)
 	income_changed.emit(get_income_per_second())
 	orbital_cooldown_changed.emit(_strike_cooldown)
-	landing_phase_changed.emit(_landing_phase)
 	for structure: Node3D in _structures:
 		structure_damaged.emit(structure, _structure_health[structure], _config.extractor_max_health)
 	return true
@@ -521,7 +529,6 @@ func _call_orbital_strike(payload: Dictionary) -> bool:
 	_strike_cooldown = stats.cooldown
 	credits_changed.emit(_credits)
 	orbital_cooldown_changed.emit(_strike_cooldown)
-	landing_phase_changed.emit(_landing_phase)
 	orbital_strike_called.emit(strike.global_position)
 	return true
 
@@ -538,7 +545,6 @@ func _tick_abilities(payload: Dictionary) -> bool:
 		return false
 	_strike_cooldown = maxf(0.0, _strike_cooldown - delta)
 	orbital_cooldown_changed.emit(_strike_cooldown)
-	landing_phase_changed.emit(_landing_phase)
 	return true
 
 
