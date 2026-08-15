@@ -19,6 +19,8 @@ extends Node
 @export var turret_placed: AudioStream
 @export var turret_sold: AudioStream
 @export var run_over: AudioStream
+@export var orbital_charge: AudioStream
+@export var orbital_impact: AudioStream
 
 ## Voices, so a cue never cuts off the one before it.
 const VOICE_COUNT: int = 6
@@ -43,6 +45,8 @@ func _ready() -> void:
 	GameCommands.upgrade_purchased.connect(_on_upgrade_purchased)
 	GameCommands.turret_placed.connect(_on_turret_placed)
 	GameCommands.turret_sold.connect(_on_turret_sold)
+	GameCommands.orbital_strike_called.connect(_on_orbital_called)
+	GameCommands.orbital_strike_impacted.connect(_on_orbital_impacted)
 	GameCommands.run_ended.connect(_on_run_ended)
 
 
@@ -96,6 +100,14 @@ func _on_turret_placed(_turret: Node3D) -> void:
 
 func _on_turret_sold(_position: Vector3, _refund: int) -> void:
 	_play(turret_sold, -6.0)
+
+
+func _on_orbital_called(_world_position: Vector3) -> void:
+	_play(orbital_charge, -2.0)
+
+
+func _on_orbital_impacted(_world_position: Vector3, _enemies_hit: int) -> void:
+	_play(orbital_impact, 3.0)
 
 
 func _on_run_ended(_final_wave: int) -> void:

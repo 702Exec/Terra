@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://5pprr0vv13ss"]
+[gd_scene load_steps=35 format=3 uid="uid://5pprr0vv13ss"]
 
 [ext_resource type="Script" path="res://scripts/mission.gd" id="1_mission"]
 [ext_resource type="Script" path="res://scripts/nav_path_service.gd" id="2_path"]
@@ -23,6 +23,10 @@
 [ext_resource type="AudioStream" path="res://assets/audio/turret_placed.wav" id="21_placed"]
 [ext_resource type="AudioStream" path="res://assets/audio/turret_sold.wav" id="22_sold"]
 [ext_resource type="AudioStream" path="res://assets/audio/run_over.wav" id="23_over"]
+[ext_resource type="PackedScene" path="res://scenes/orbital_strike.tscn" id="24_strike"]
+[ext_resource type="Script" path="res://scripts/ability_ticker.gd" id="25_ability"]
+[ext_resource type="AudioStream" path="res://assets/audio/orbital_charge.wav" id="26_charge"]
+[ext_resource type="AudioStream" path="res://assets/audio/orbital_impact.wav" id="27_impact"]
 
 [sub_resource type="Environment" id="Environment_battle"]
 background_mode = 1
@@ -45,15 +49,17 @@ geometry_parsed_geometry_type = 1
 geometry_collision_mask = 1
 agent_radius = 0.75
 
-[node name="Main" type="Node3D" node_paths=PackedStringArray("base_structure", "enemy_root", "turret_root", "structure_root")]
+[node name="Main" type="Node3D" node_paths=PackedStringArray("base_structure", "enemy_root", "turret_root", "structure_root", "effect_root")]
 script = ExtResource("1_mission")
 config = ExtResource("6_config")
 base_structure = NodePath("BaseStructure")
 enemy_root = NodePath("Enemies")
 turret_root = NodePath("Turrets")
 structure_root = NodePath("Structures")
+effect_root = NodePath("Effects")
 enemy_scene = ExtResource("8_enemy")
 turret_scene = ExtResource("9_turret")
+strike_scene = ExtResource("24_strike")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_battle")
@@ -127,6 +133,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0, 0)
 
 [node name="Enemies" type="Node3D" parent="."]
 
+[node name="Effects" type="Node3D" parent="."]
+
 [node name="PlacementMarker" parent="." instance=ExtResource("10_marker")]
 
 [node name="PathService" type="Node3D" parent="." node_paths=PackedStringArray("navigation_region", "lane_root", "base_target")]
@@ -163,6 +171,12 @@ camera = NodePath("../Camera")
 camera_rig = NodePath("../CameraRig")
 placement_marker = NodePath("../PlacementMarker")
 
+[node name="Abilities" type="Node" parent="."]
+script = ExtResource("25_ability")
+
+[node name="TickTimer" type="Timer" parent="Abilities"]
+wait_time = 0.25
+
 [node name="Audio" type="Node" parent="."]
 script = ExtResource("16_audio")
 wave_warning = ExtResource("17_warn")
@@ -172,5 +186,7 @@ upgrade_ready = ExtResource("20_upgrade")
 turret_placed = ExtResource("21_placed")
 turret_sold = ExtResource("22_sold")
 run_over = ExtResource("23_over")
+orbital_charge = ExtResource("26_charge")
+orbital_impact = ExtResource("27_impact")
 
 [node name="HUD" parent="." instance=ExtResource("11_hud")]

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MissionConfig" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="MissionConfig" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/mission_config.gd" id="1_mission_config"]
 [ext_resource type="Resource" path="res://resources/turret_pulse.tres" id="2_turret_pulse"]
@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://resources/upgrade_targeting.tres" id="5_targeting"]
 [ext_resource type="Resource" path="res://resources/upgrade_optics.tres" id="6_optics"]
 [ext_resource type="Resource" path="res://resources/upgrade_extraction.tres" id="7_extraction"]
+[ext_resource type="Resource" path="res://resources/orbital_strike.tres" id="8_strike"]
 
 [resource]
 script = ExtResource("1_mission_config")
@@ -18,6 +19,7 @@ extractor_max_health = 500
 turret_stats = ExtResource("2_turret_pulse")
 wave_config = ExtResource("3_wave_standard")
 upgrade_tracks = Array[Resource]([ExtResource("4_weapons"), ExtResource("5_targeting"), ExtResource("6_optics"), ExtResource("7_extraction")])
+orbital_strike = ExtResource("8_strike")
 map_half_extent = 72.0
 battlefield_extent = 66.0
 turret_min_spacing = 2.0

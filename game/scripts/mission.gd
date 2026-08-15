@@ -21,10 +21,13 @@ extends Node3D
 ## Destructible player structures placed on the map — extractors. Their children
 ## are registered with the bus in scene order.
 @export var structure_root: Node3D
+## Where transient effects such as orbital strikes are parented.
+@export var effect_root: Node3D
 
 @export_group("Prefabs")
 @export var enemy_scene: PackedScene
 @export var turret_scene: PackedScene
+@export var strike_scene: PackedScene
 
 
 func _ready() -> void:
@@ -34,6 +37,8 @@ func _ready() -> void:
 		"enemy_root": enemy_root,
 		"turret_root": turret_root,
 		"structure_root": structure_root,
+		"effect_root": effect_root,
 		"enemy_scene": enemy_scene,
+		"strike_scene": strike_scene,
 		"turret_scene": turret_scene,
 	})

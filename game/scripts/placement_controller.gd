@@ -5,11 +5,11 @@ extends Node3D
 ##
 ## Lineage: the camera raycast and ground-hit plumbing is still the original
 ## rts_controller.gd, retargeted from move orders to structure placement. Unit
-## selection is not a Phase 0 feature — the player builds and places.
+## selection is not a Phase 0 feature â€” the player builds and places.
 ##
 ## Now that the map is larger than the screen, drag has to mean "pan" while tap
-## still means "place." Rather than reserving a second mouse button — which
-## touch does not have — this measures the gesture: move past a small threshold
+## still means "place." Rather than reserving a second mouse button â€” which
+## touch does not have â€” this measures the gesture: move past a small threshold
 ## and it becomes a pan, release inside it and it places. That reads identically
 ## under Godot's mouse emulation on touch, so the mobile target keeps working.
 
@@ -106,11 +106,15 @@ func _update_hover(screen_position: Vector2) -> void:
 
 	_hover_position = hit.get("position", Vector3.ZERO)
 	_has_hover = true
-	placement_marker.show_ghost(_hover_position, _is_placeable(_hover_position))
+	_show_ghost_for_mode()
 
 
 func _place_at(screen_position: Vector2) -> void:
 	if not GameCommands.is_run_active():
+		return
+	# An armed orbital strike claims the tap before anything else, including
+	# buildings — you are aiming at the ground, not interacting with the map.
+	if _try_call_strike(screen_position):
 		return
 	if _try_open_upgrade_panel(screen_position):
 		return
@@ -126,6 +130,25 @@ func _place_at(screen_position: Vector2) -> void:
 	if placement_marker != null:
 		placement_marker.flash(target, placed)
 	_has_hover = false
+
+
+func _try_call_strike(screen_position: Vector2) -> bool:
+	var bar: Node = get_tree().get_first_node_in_group("ability_bar")
+	if bar == null or not bar.call("is_strike_armed"):
+		return false
+
+	var hit := _raycast(screen_position, ground_collision_mask)
+	if hit.is_empty():
+		return false
+	var target: Vector3 = hit.get("position", Vector3.ZERO)
+	var called: bool = GameCommands.submit(GameCommandBus.Command.CALL_ORBITAL_STRIKE, {
+		"position": target,
+	})
+	if placement_marker != null:
+		placement_marker.flash(target, called, bar.call("get_strike_radius"))
+	bar.call("disarm")
+	_has_hover = false
+	return true
 
 
 ## Tapping a building does something other than place. The structure layer is
@@ -190,6 +213,16 @@ func _on_run_ended(_final_wave: int) -> void:
 
 func _refresh_ghost() -> void:
 	if not _has_hover or placement_marker == null:
+		return
+	_show_ghost_for_mode()
+
+
+## The ghost previews whatever the next tap will actually do — a turret
+## footprint, or the strike radius at true size.
+func _show_ghost_for_mode() -> void:
+	var bar: Node = get_tree().get_first_node_in_group("ability_bar")
+	if bar != null and bar.call("is_strike_armed"):
+		placement_marker.show_ghost(_hover_position, true, bar.call("get_strike_radius"))
 		return
 	placement_marker.show_ghost(_hover_position, _is_placeable(_hover_position))
 

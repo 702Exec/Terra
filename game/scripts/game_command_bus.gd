@@ -19,6 +19,8 @@ enum Command {
 	PLACE_TURRET,
 	SELL_TURRET,
 	PURCHASE_UPGRADE,
+	CALL_ORBITAL_STRIKE,
+	TICK_ABILITIES,
 	SET_WAVE_COUNTDOWN,
 	WARN_WAVE,
 	START_WAVE,
@@ -44,6 +46,9 @@ signal enemy_died(enemy: Node3D)
 signal turret_placed(turret: Node3D)
 signal turret_sold(world_position: Vector3, refund: int)
 signal upgrade_purchased(track_id: StringName, level: int)
+signal orbital_strike_called(world_position: Vector3)
+signal orbital_strike_impacted(world_position: Vector3, enemies_hit: int)
+signal orbital_cooldown_changed(seconds_left: float)
 signal command_rejected(command: Command, reason: String)
 signal run_ended(final_wave: int)
 
@@ -89,6 +94,11 @@ var _structure_health: Dictionary[Node3D, int] = {}
 ## Purchased level per upgrade track id. Absent means level zero.
 var _upgrade_levels: Dictionary[StringName, int] = {}
 
+## Seconds of orbital strike cooldown remaining. Zero means ready.
+var _strike_cooldown: float = 0.0
+var _effect_root: Node3D = null
+var _strike_scene: PackedScene = null
+
 
 # --- Submission ---------------------------------------------------------------
 
@@ -108,6 +118,10 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 			return _sell_turret(payload)
 		Command.PURCHASE_UPGRADE:
 			return _purchase_upgrade(payload)
+		Command.CALL_ORBITAL_STRIKE:
+			return _call_orbital_strike(payload)
+		Command.TICK_ABILITIES:
+			return _tick_abilities(payload)
 		Command.SET_WAVE_COUNTDOWN:
 			return _set_wave_countdown(payload)
 		Command.WARN_WAVE:
@@ -197,6 +211,21 @@ func get_upgrade_cost(track_id: StringName) -> int:
 	if track == null:
 		return 0
 	return track.cost_for_level(get_upgrade_level(track_id) + 1)
+
+
+func get_orbital_strike_stats() -> OrbitalStrikeStats:
+	return null if _config == null else _config.orbital_strike
+
+
+func get_orbital_cooldown() -> float:
+	return _strike_cooldown
+
+
+func can_call_orbital_strike() -> bool:
+	var stats: OrbitalStrikeStats = get_orbital_strike_stats()
+	if stats == null or not _run_active:
+		return false
+	return _strike_cooldown <= 0.0 and _credits >= stats.cost
 
 
 func get_turret_cost() -> int:
@@ -289,6 +318,8 @@ func _begin_mission(payload: Dictionary) -> bool:
 	_enemy_root = payload.get("enemy_root", null) as Node3D
 	_turret_root = payload.get("turret_root", null) as Node3D
 	_enemy_scene = payload.get("enemy_scene", null) as PackedScene
+	_effect_root = payload.get("effect_root", null) as Node3D
+	_strike_scene = payload.get("strike_scene", null) as PackedScene
 	_turret_scene = payload.get("turret_scene", null) as PackedScene
 	if _config == null or _base == null or _enemy_root == null or _turret_root == null:
 		command_rejected.emit(Command.BEGIN_MISSION, "mission wiring incomplete")
@@ -299,6 +330,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 
 	_enemy_health.clear()
 	_enemy_stats.clear()
+	_strike_cooldown = 0.0
 	_upgrade_levels.clear()
 	_enemy_paths = []
 	_lane_names = PackedStringArray()
@@ -313,6 +345,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 	credits_changed.emit(_credits)
 	base_health_changed.emit(_base_health, _config.base_max_health)
 	income_changed.emit(get_income_per_second())
+	orbital_cooldown_changed.emit(_strike_cooldown)
 	for structure: Node3D in _structures:
 		structure_damaged.emit(structure, _structure_health[structure], _config.extractor_max_health)
 	return true
@@ -427,6 +460,54 @@ func get_turret_refund() -> int:
 	if _config == null:
 		return 0
 	return int(floorf(float(get_turret_cost()) * _config.turret_refund_fraction))
+
+
+func _call_orbital_strike(payload: Dictionary) -> bool:
+	var stats: OrbitalStrikeStats = get_orbital_strike_stats()
+	if stats == null or _strike_scene == null or _effect_root == null:
+		command_rejected.emit(Command.CALL_ORBITAL_STRIKE, "orbital support unavailable")
+		return false
+	if _strike_cooldown > 0.0:
+		command_rejected.emit(Command.CALL_ORBITAL_STRIKE, "still cooling down")
+		return false
+	if _credits < stats.cost:
+		command_rejected.emit(Command.CALL_ORBITAL_STRIKE, "not enough credits")
+		return false
+
+	var where: Vector3 = payload.get("position", Vector3.ZERO)
+	if absf(where.x) > _config.map_half_extent or absf(where.z) > _config.map_half_extent:
+		command_rejected.emit(Command.CALL_ORBITAL_STRIKE, "outside the battlefield")
+		return false
+
+	var strike := _strike_scene.instantiate() as Node3D
+	if strike == null:
+		return false
+	strike.set("stats", stats)
+	strike.connect("impacted", _on_strike_impacted)
+	_effect_root.add_child(strike)
+	strike.global_position = Vector3(where.x, 0.0, where.z)
+
+	_credits -= stats.cost
+	_strike_cooldown = stats.cooldown
+	credits_changed.emit(_credits)
+	orbital_cooldown_changed.emit(_strike_cooldown)
+	orbital_strike_called.emit(strike.global_position)
+	return true
+
+
+func _on_strike_impacted(world_position: Vector3, killed: int) -> void:
+	orbital_strike_impacted.emit(world_position, killed)
+
+
+## Driven by AbilityTicker rather than by a _process loop in the bus, so the bus
+## stays a pure command sink.
+func _tick_abilities(payload: Dictionary) -> bool:
+	var delta: float = float(payload.get("delta", 0.0))
+	if delta <= 0.0 or _strike_cooldown <= 0.0:
+		return false
+	_strike_cooldown = maxf(0.0, _strike_cooldown - delta)
+	orbital_cooldown_changed.emit(_strike_cooldown)
+	return true
 
 
 func _purchase_upgrade(payload: Dictionary) -> bool:

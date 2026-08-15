@@ -24,6 +24,8 @@ extends Resource
 @export var wave_config: WaveConfig
 ## Purchasable upgrade lines, shown in the Spire panel in this order.
 @export var upgrade_tracks: Array[UpgradeTrack] = []
+## Orbital fire support. Null disables the ability entirely.
+@export var orbital_strike: OrbitalStrikeStats
 
 @export_group("Battlefield")
 ## Half-extent of the ground plane. Drives the camera's pan limits and the

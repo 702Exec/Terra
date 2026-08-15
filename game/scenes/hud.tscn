@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/threat_markers.gd" id="2_threat"]
 [ext_resource type="Script" path="res://scripts/minimap.gd" id="3_minimap"]
 [ext_resource type="Script" path="res://scripts/upgrade_panel.gd" id="4_upgrade"]
 [ext_resource type="Script" path="res://scripts/sell_prompt.gd" id="5_sell"]
+[ext_resource type="Script" path="res://scripts/ability_bar.gd" id="6_ability"]
 
 [sub_resource type="StyleBoxFlat" id="Style_panel"]
 content_margin_left = 24.0
@@ -147,6 +148,28 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "CLOSE"
+
+[node name="AbilityBar" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -92.0
+offset_right = 348.0
+offset_bottom = -24.0
+grow_vertical = 0
+script = ExtResource("6_ability")
+
+[node name="StrikeButton" type="Button" parent="AbilityBar"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 17
+text = "ORBITAL STRIKE"
 
 [node name="SellPrompt" type="PanelContainer" parent="."]
 unique_name_in_owner = true

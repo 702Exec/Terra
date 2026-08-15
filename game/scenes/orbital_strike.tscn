@@ -1,0 +1,52 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/orbital_strike.gd" id="1_strike"]
+
+[sub_resource type="StandardMaterial3D" id="Material_target"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.55, 0.2, 0.75)
+
+[sub_resource type="TorusMesh" id="Mesh_target"]
+inner_radius = 0.9
+outer_radius = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_column"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.92, 0.7, 0.85)
+
+[sub_resource type="CylinderMesh" id="Mesh_column"]
+top_radius = 2.0
+bottom_radius = 3.0
+height = 90.0
+
+[sub_resource type="StandardMaterial3D" id="Material_blast"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.78, 0.35, 0.6)
+
+[sub_resource type="TorusMesh" id="Mesh_blast"]
+inner_radius = 0.8
+outer_radius = 1.0
+
+[node name="OrbitalStrike" type="Node3D"]
+script = ExtResource("1_strike")
+
+[node name="TargetRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+material_override = SubResource("Material_target")
+mesh = SubResource("Mesh_target")
+
+[node name="Column" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 45, 0)
+material_override = SubResource("Material_column")
+mesh = SubResource("Mesh_column")
+
+[node name="BlastRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
+material_override = SubResource("Material_blast")
+mesh = SubResource("Mesh_blast")
+
+[node name="FlightTimer" type="Timer" parent="."]
+one_shot = true

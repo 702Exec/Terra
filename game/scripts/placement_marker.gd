@@ -3,13 +3,13 @@ extends Node3D
 
 ## Turret placement indicator.
 ##
-## Lineage: this is the old move_marker.gd — same flat marker, same fade-out
-## tween — retargeted from "a move order landed here" to "a turret goes here."
+## Lineage: this is the old move_marker.gd â€” same flat marker, same fade-out
+## tween â€” retargeted from "a move order landed here" to "a turret goes here."
 ##
 ## It has two jobs because the game has two input models. On desktop it tracks
 ## the pointer as a persistent ghost. On touch there is no hover, so it flashes
 ## at the tap point instead. Nothing that is only visible on hover is allowed to
-## carry information the player needs (CLAUDE.md, mobile UI constraints) — the
+## carry information the player needs (CLAUDE.md, mobile UI constraints) â€” the
 ## ghost is confirmation, the HUD carries the cost.
 
 @export var flash_lifetime: float = 0.5
@@ -19,6 +19,9 @@ extends Node3D
 const VALID_COLOR: Color = Color(0.15, 1.0, 0.9, 0.65)
 const INVALID_COLOR: Color = Color(1.0, 0.25, 0.2, 0.65)
 const HOVER_HEIGHT: float = 0.06
+## Outer radius of the marker mesh as authored, used to convert a requested
+## world radius into a scale factor.
+const MESH_RADIUS: float = 0.8
 
 var _material: StandardMaterial3D = null
 var _tween: Tween = null
@@ -31,9 +34,15 @@ func _ready() -> void:
 
 
 ## Persistent ghost under the pointer. Desktop affordance only.
-func show_ghost(world_position: Vector3, is_valid: bool) -> void:
+##
+## `world_radius` lets a caller preview something larger than a turret footprint
+## — an orbital strike previews at the size it will actually land, which is the
+## difference between aiming and guessing.
+func show_ghost(world_position: Vector3, is_valid: bool, world_radius: float = 1.0) -> void:
 	_kill_tween()
 	global_position = world_position + Vector3.UP * HOVER_HEIGHT
+	var factor: float = maxf(0.05, world_radius / MESH_RADIUS)
+	scale = Vector3(factor, 1.0, factor)
 	_material.albedo_color = VALID_COLOR if is_valid else INVALID_COLOR
 	visible = true
 
@@ -44,9 +53,11 @@ func hide_ghost() -> void:
 
 
 ## One-shot confirmation pulse at a committed (or rejected) placement point.
-func flash(world_position: Vector3, is_valid: bool) -> void:
+func flash(world_position: Vector3, is_valid: bool, world_radius: float = 1.0) -> void:
 	_kill_tween()
 	global_position = world_position + Vector3.UP * HOVER_HEIGHT
+	var factor: float = maxf(0.05, world_radius / MESH_RADIUS)
+	scale = Vector3(factor, 1.0, factor)
 	var color: Color = VALID_COLOR if is_valid else INVALID_COLOR
 	color.a = 0.95
 	_material.albedo_color = color
