@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UpgradeTrack" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/upgrade_track.gd" id="1_track"]
+
+[resource]
+script = ExtResource("1_track")
+id = &"extraction"
+display_name = "Extraction"
+description = "+2 credits/sec per extractor per level"
+max_level = 5
+base_cost = 220
+cost_multiplier = 1.6
+effect_per_level = 2.0

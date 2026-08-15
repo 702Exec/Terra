@@ -58,7 +58,7 @@ func _on_base_health_changed(current_health: int, max_health: int) -> void:
 func _on_credits_changed(credits: int) -> void:
 	credits_label.text = "CREDITS  %d   (+%.0f/s)" % [credits, GameCommands.get_income_per_second()]
 	var cost: int = GameCommands.get_turret_cost()
-	placement_label.text = "Click the ground to place a turret  ·  %d credits" % cost
+	placement_label.text = "Tap ground: turret (%d cr)   ·   Tap the base: upgrades   ·   Drag: pan   ·   Wheel: zoom" % cost
 	placement_label.add_theme_color_override(
 		"font_color",
 		AFFORDABLE_COLOR if credits >= cost else UNAFFORDABLE_COLOR

@@ -18,6 +18,9 @@ extends Node3D
 @export var placement_marker: PlacementMarker
 
 @export var ground_collision_mask: int = 1
+## Clickable player structures sit on their own layer so a tap can be tested
+## against them before it is treated as a placement.
+@export var structure_collision_mask: int = 2
 
 ## Pixels of travel before a press stops being a tap. Generous enough to
 ## tolerate an unsteady finger, tight enough that deliberate taps land.
@@ -109,6 +112,9 @@ func _update_hover(screen_position: Vector2) -> void:
 func _place_at(screen_position: Vector2) -> void:
 	if not GameCommands.is_run_active():
 		return
+	if _try_open_upgrade_panel(screen_position):
+		return
+
 	var hit := _raycast(screen_position, ground_collision_mask)
 	if hit.is_empty():
 		return
@@ -120,6 +126,26 @@ func _place_at(screen_position: Vector2) -> void:
 	if placement_marker != null:
 		placement_marker.flash(target, placed)
 	_has_hover = false
+
+
+## Tapping the Spire opens its upgrade panel instead of placing anything. The
+## structure layer is tested first so the building always wins over the ground
+## behind it.
+func _try_open_upgrade_panel(screen_position: Vector2) -> bool:
+	var hit := _raycast(screen_position, structure_collision_mask)
+	if hit.is_empty():
+		return false
+	var collider := hit.get("collider") as Node
+	if collider == null:
+		return false
+	if collider.get_parent() != GameCommands.get_base_node():
+		return false
+
+	var panel: Node = get_tree().get_first_node_in_group("upgrade_panel")
+	if panel == null:
+		return false
+	panel.call("toggle")
+	return true
 
 
 ## Both halves of the rule, so the ghost never claims a placement the command

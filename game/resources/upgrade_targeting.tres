@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UpgradeTrack" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/upgrade_track.gd" id="1_track"]
+
+[resource]
+script = ExtResource("1_track")
+id = &"targeting"
+display_name = "Targeting"
+description = "-8% turret fire interval per level"
+max_level = 5
+base_cost = 180
+cost_multiplier = 1.6
+effect_per_level = 0.08

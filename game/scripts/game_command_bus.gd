@@ -17,6 +17,7 @@ enum Command {
 	SET_ENEMY_PATHS,
 	ADD_CREDITS,
 	PLACE_TURRET,
+	PURCHASE_UPGRADE,
 	SET_WAVE_COUNTDOWN,
 	WARN_WAVE,
 	START_WAVE,
@@ -40,6 +41,7 @@ signal wave_started(wave_number: int, enemy_count: int)
 signal enemy_spawned(enemy: Node3D)
 signal enemy_died(enemy: Node3D)
 signal turret_placed(turret: Node3D)
+signal upgrade_purchased(track_id: StringName, level: int)
 signal command_rejected(command: Command, reason: String)
 signal run_ended(final_wave: int)
 
@@ -74,6 +76,9 @@ var _enemy_health: Dictionary[Node3D, int] = {}
 var _structures: Array[Node3D] = []
 var _structure_health: Dictionary[Node3D, int] = {}
 
+## Purchased level per upgrade track id. Absent means level zero.
+var _upgrade_levels: Dictionary[StringName, int] = {}
+
 
 # --- Submission ---------------------------------------------------------------
 
@@ -89,6 +94,8 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 			return _add_credits(payload)
 		Command.PLACE_TURRET:
 			return _place_turret(payload)
+		Command.PURCHASE_UPGRADE:
+			return _purchase_upgrade(payload)
 		Command.SET_WAVE_COUNTDOWN:
 			return _set_wave_countdown(payload)
 		Command.WARN_WAVE:
@@ -144,6 +151,40 @@ func get_wave_config() -> WaveConfig:
 	if _config == null:
 		return null
 	return _config.wave_config
+
+
+func get_upgrade_tracks() -> Array[UpgradeTrack]:
+	if _config == null:
+		return []
+	return _config.upgrade_tracks
+
+
+func get_upgrade_track(track_id: StringName) -> UpgradeTrack:
+	for track: UpgradeTrack in get_upgrade_tracks():
+		if track != null and track.id == track_id:
+			return track
+	return null
+
+
+func get_upgrade_level(track_id: StringName) -> int:
+	return _upgrade_levels.get(track_id, 0)
+
+
+## Accumulated effect of a track at its current level. Zero for anything
+## unpurchased or unknown, so callers can apply it unconditionally.
+func get_upgrade_effect(track_id: StringName) -> float:
+	var track: UpgradeTrack = get_upgrade_track(track_id)
+	if track == null:
+		return 0.0
+	return track.effect_at_level(get_upgrade_level(track_id))
+
+
+## Cost of the next level, or 0 when the track is maxed.
+func get_upgrade_cost(track_id: StringName) -> int:
+	var track: UpgradeTrack = get_upgrade_track(track_id)
+	if track == null:
+		return 0
+	return track.cost_for_level(get_upgrade_level(track_id) + 1)
 
 
 func get_turret_cost() -> int:
@@ -223,8 +264,9 @@ func get_structure_health(structure: Node3D) -> int:
 func get_income_per_second() -> float:
 	if _config == null:
 		return 0.0
-	return _config.base_credits_per_second \
-		+ _config.extractor_credits_per_second * float(_structures.size())
+	var per_extractor: float = _config.extractor_credits_per_second \
+		+ get_upgrade_effect(&"extraction")
+	return _config.base_credits_per_second + per_extractor * float(_structures.size())
 
 
 # --- Command handlers ---------------------------------------------------------
@@ -244,6 +286,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 		return false
 
 	_enemy_health.clear()
+	_upgrade_levels.clear()
 	_enemy_paths = []
 	_lane_names = PackedStringArray()
 	_register_structures(payload.get("structure_root", null) as Node3D)
@@ -343,6 +386,33 @@ func _place_turret(payload: Dictionary) -> bool:
 	_credits -= cost
 	credits_changed.emit(_credits)
 	turret_placed.emit(turret)
+	return true
+
+
+func _purchase_upgrade(payload: Dictionary) -> bool:
+	var track_id: StringName = payload.get("track_id", &"")
+	var track: UpgradeTrack = get_upgrade_track(track_id)
+	if track == null:
+		command_rejected.emit(Command.PURCHASE_UPGRADE, "no such upgrade track")
+		return false
+
+	var next_level: int = get_upgrade_level(track_id) + 1
+	if next_level > track.max_level:
+		command_rejected.emit(Command.PURCHASE_UPGRADE, "already at maximum level")
+		return false
+
+	var cost: int = track.cost_for_level(next_level)
+	if _credits < cost:
+		command_rejected.emit(Command.PURCHASE_UPGRADE, "not enough credits")
+		return false
+
+	_credits -= cost
+	_upgrade_levels[track_id] = next_level
+	credits_changed.emit(_credits)
+	upgrade_purchased.emit(track_id, next_level)
+	# Extraction changes the payout rate, so anything showing income has to hear
+	# about it too.
+	income_changed.emit(get_income_per_second())
 	return true
 
 

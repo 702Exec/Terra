@@ -20,8 +20,16 @@ var stats: TurretStats = null
 
 var _target: Node3D = null
 
+## Base stats plus whatever the Spire has bought. Recomputed on purchase rather
+## than read per shot, and never written back into `stats` — that resource is
+## shared by every turret and would persist the change across missions.
+var _damage: int = 0
+var _range: float = 0.0
+
 const BEAM_FLASH_SECONDS: float = 0.06
 const MUZZLE_HEIGHT: float = 0.9
+## Fire interval never drops below this no matter how much Targeting is bought.
+const MIN_FIRE_INTERVAL: float = 0.08
 
 
 func _ready() -> void:
@@ -32,9 +40,9 @@ func _ready() -> void:
 		# enough to make the turret inert.
 		return
 
-	range_ring.scale = Vector3(stats.attack_range, 1.0, stats.attack_range)
+	_apply_upgrades()
+	GameCommands.upgrade_purchased.connect(_on_upgrade_purchased)
 
-	fire_timer.wait_time = stats.fire_interval
 	fire_timer.timeout.connect(_on_fire_timer_timeout)
 	retarget_timer.wait_time = stats.retarget_interval
 	retarget_timer.timeout.connect(_acquire_target)
@@ -44,9 +52,22 @@ func _ready() -> void:
 	retarget_timer.start()
 
 
+func _on_upgrade_purchased(_track_id: StringName, _level: int) -> void:
+	_apply_upgrades()
+
+
+func _apply_upgrades() -> void:
+	_damage = stats.damage + int(GameCommands.get_upgrade_effect(&"weapons"))
+	_range = stats.attack_range + GameCommands.get_upgrade_effect(&"optics")
+
+	var rate_bonus: float = clampf(GameCommands.get_upgrade_effect(&"targeting"), 0.0, 0.9)
+	fire_timer.wait_time = maxf(MIN_FIRE_INTERVAL, stats.fire_interval * (1.0 - rate_bonus))
+	range_ring.scale = Vector3(_range, 1.0, _range)
+
+
 func _acquire_target() -> void:
 	var nearest: Node3D = null
-	var nearest_distance: float = stats.attack_range
+	var nearest_distance: float = _range
 	for candidate: Node in get_tree().get_nodes_in_group("enemy"):
 		var enemy := candidate as Node3D
 		if enemy == null or not is_instance_valid(enemy):
@@ -71,7 +92,7 @@ func _on_fire_timer_timeout() -> void:
 	_flash_beam(target_position)
 	GameCommands.submit(GameCommandBus.Command.DAMAGE_ENEMY, {
 		"enemy": _target,
-		"amount": stats.damage,
+		"amount": _damage,
 		"source": self,
 	})
 
@@ -79,7 +100,7 @@ func _on_fire_timer_timeout() -> void:
 func _has_valid_target() -> bool:
 	if _target == null or not is_instance_valid(_target):
 		return false
-	return _flat_distance(global_position, _target.global_position) <= stats.attack_range
+	return _flat_distance(global_position, _target.global_position) <= _range
 
 
 func _face(target_position: Vector3) -> void:

@@ -22,6 +22,8 @@ extends Resource
 @export_group("Loadout")
 @export var turret_stats: TurretStats
 @export var wave_config: WaveConfig
+## Purchasable upgrade lines, shown in the Spire panel in this order.
+@export var upgrade_tracks: Array[UpgradeTrack] = []
 
 @export_group("Battlefield")
 ## Half-extent of the ground plane. Drives the camera's pan limits and the

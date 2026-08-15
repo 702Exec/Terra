@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UpgradeTrack" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/upgrade_track.gd" id="1_track"]
+
+[resource]
+script = ExtResource("1_track")
+id = &"optics"
+display_name = "Optics"
+description = "+1.5 turret range per level"
+max_level = 5
+base_cost = 200
+cost_multiplier = 1.6
+effect_per_level = 1.5
