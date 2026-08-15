@@ -18,12 +18,16 @@ var _fractional_credits: float = 0.0
 
 
 func _ready() -> void:
-	GameCommands.mission_started.connect(_on_mission_started)
+	GameCommands.landing_phase_changed.connect(_on_landing_phase_changed)
 	GameCommands.run_ended.connect(_on_run_ended)
 	tick_timer.timeout.connect(_on_tick)
 
 
-func _on_mission_started() -> void:
+## Extraction starts when the engine is on the ground and awake — not when the
+## scene loads.
+func _on_landing_phase_changed(_phase: GameCommandBus.LandingPhase) -> void:
+	if not GameCommands.is_landed():
+		return
 	_fractional_credits = 0.0
 	tick_timer.start()
 

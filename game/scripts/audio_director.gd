@@ -21,6 +21,9 @@ extends Node
 @export var run_over: AudioStream
 @export var orbital_charge: AudioStream
 @export var orbital_impact: AudioStream
+@export var landing_descent: AudioStream
+@export var landing_impact: AudioStream
+@export var engine_wake: AudioStream
 
 ## Voices, so a cue never cuts off the one before it.
 const VOICE_COUNT: int = 6
@@ -39,6 +42,7 @@ func _ready() -> void:
 		add_child(player)
 		_players.append(player)
 
+	GameCommands.landing_phase_changed.connect(_on_landing_phase_changed)
 	GameCommands.wave_incoming.connect(_on_wave_incoming)
 	GameCommands.structure_damaged.connect(_on_structure_damaged)
 	GameCommands.structure_destroyed.connect(_on_structure_destroyed)
@@ -72,6 +76,18 @@ func _play(stream: AudioStream, volume_db: float = 0.0) -> void:
 	player.stream = stream
 	player.volume_db = volume_db
 	player.play()
+
+
+## The landing's three audible beats. The silence between impact and wake is
+## deliberately not filled.
+func _on_landing_phase_changed(phase: GameCommandBus.LandingPhase) -> void:
+	match phase:
+		GameCommandBus.LandingPhase.DESCENT:
+			_play(landing_descent, -1.0)
+		GameCommandBus.LandingPhase.IMPACT:
+			_play(landing_impact, 4.0)
+		GameCommandBus.LandingPhase.WAKING:
+			_play(engine_wake, 0.0)
 
 
 func _on_wave_incoming(_wave_number: int, _lane_names: PackedStringArray) -> void:

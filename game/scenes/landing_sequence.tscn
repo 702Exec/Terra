@@ -1,0 +1,50 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/landing_sequence.gd" id="1_landing"]
+
+[sub_resource type="StandardMaterial3D" id="Material_shockwave"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.88, 0.66, 0.55)
+
+[sub_resource type="TorusMesh" id="Mesh_shockwave"]
+inner_radius = 0.86
+outer_radius = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_dust"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.72, 0.62, 0.48, 0.5)
+
+[sub_resource type="CylinderMesh" id="Mesh_dust"]
+top_radius = 1.0
+bottom_radius = 1.0
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="Material_glow"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.6, 0.24, 0.8)
+
+[sub_resource type="CylinderMesh" id="Mesh_glow"]
+top_radius = 3.4
+bottom_radius = 0.6
+height = 14.0
+
+[node name="LandingSequence" type="Node3D"]
+script = ExtResource("1_landing")
+
+[node name="Shockwave" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+material_override = SubResource("Material_shockwave")
+mesh = SubResource("Mesh_shockwave")
+
+[node name="Dust" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+material_override = SubResource("Material_dust")
+mesh = SubResource("Mesh_dust")
+
+[node name="EntryGlow" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, 0)
+material_override = SubResource("Material_glow")
+mesh = SubResource("Mesh_glow")

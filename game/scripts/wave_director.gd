@@ -28,6 +28,7 @@ var _next_wave_number: int = 1
 var _wave_lanes: PackedInt32Array = PackedInt32Array()
 var _lane_cursor: int = 0
 var _roster: Array[EnemyStats] = []
+var _lanes_ready: bool = false
 
 
 func _ready() -> void:
@@ -36,15 +37,29 @@ func _ready() -> void:
 	spawn_timer.timeout.connect(_on_spawn_timer_timeout)
 	countdown_timer.timeout.connect(_on_countdown_tick)
 	GameCommands.enemy_paths_ready.connect(_on_enemy_paths_ready, CONNECT_ONE_SHOT)
+	GameCommands.landing_phase_changed.connect(_on_landing_phase_changed)
 	GameCommands.run_ended.connect(_on_run_ended)
 
 
-## Waves cannot start before there are lanes for them to walk, so the director
-## waits on the paths rather than on mission start.
+## Waves need two things before they can start: lanes for them to walk, and a
+## Spire on the ground to walk at. Whichever arrives second starts the clock.
 func _on_enemy_paths_ready(_paths: Array[PackedVector3Array]) -> void:
 	_config = GameCommands.get_wave_config()
 	if _config == null or _config.entries.is_empty():
 		push_warning("WaveDirector has no wave composition; no waves will run.")
+		return
+	_lanes_ready = true
+	_try_start()
+
+
+func _on_landing_phase_changed(_phase: GameCommandBus.LandingPhase) -> void:
+	_try_start()
+
+
+func _try_start() -> void:
+	if not _lanes_ready or not GameCommands.is_landed() or not wave_timer.is_stopped():
+		return
+	if _next_wave_number > 1:
 		return
 	_schedule_next_wave()
 

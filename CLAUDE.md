@@ -51,6 +51,8 @@ Everything below is built and verified running.
 
 **HUD** — wave countdown, base health, credits and income, minimap (bottom right, tap to jump), off-screen threat markers, upgrade panel, turret sell prompt.
 
+**Landing sequence** — `scripts/landing_sequence.gd`. The Spire falls, lands, the dust settles, silence holds, the engine wakes. Waves and extraction are both gated on `GameCommands.is_landed()`, so it is game state rather than presentation; a sequence that never completes is a soft-lock, which is why `abort()` exists. Roughly 7.5s end to end. Tune `silence_time` first — the gap is doing more work than the impact.
+
 **Audio** — `scripts/audio_director.gd`, driven off bus signals. Placeholder synthesised tones in `assets/audio/`. Phase 5 replaces the files, not the wiring.
 
 ## Architecture rules

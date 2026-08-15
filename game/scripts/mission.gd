@@ -23,6 +23,9 @@ extends Node3D
 @export var structure_root: Node3D
 ## Where transient effects such as orbital strikes are parented.
 @export var effect_root: Node3D
+## Optional. When present the mission waits for it before running waves or
+## paying out; when absent the Spire is simply already landed.
+@export var landing_sequence: Node
 
 @export_group("Prefabs")
 @export var enemy_scene: PackedScene
@@ -38,6 +41,7 @@ func _ready() -> void:
 		"turret_root": turret_root,
 		"structure_root": structure_root,
 		"effect_root": effect_root,
+		"awaiting_landing": landing_sequence != null,
 		"enemy_scene": enemy_scene,
 		"strike_scene": strike_scene,
 		"turret_scene": turret_scene,

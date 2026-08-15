@@ -21,6 +21,7 @@ enum Command {
 	PURCHASE_UPGRADE,
 	CALL_ORBITAL_STRIKE,
 	TICK_ABILITIES,
+	SET_LANDING_PHASE,
 	SET_WAVE_COUNTDOWN,
 	WARN_WAVE,
 	START_WAVE,
@@ -31,7 +32,13 @@ enum Command {
 	END_RUN,
 }
 
+## The Spire's arrival. Waves and extraction both wait on DONE, so this is game
+## state rather than presentation — the mission has not started until the engine
+## is on the ground and awake.
+enum LandingPhase { DESCENT, IMPACT, WAKING, DONE }
+
 signal mission_started()
+signal landing_phase_changed(phase: LandingPhase)
 signal enemy_paths_ready(paths: Array[PackedVector3Array])
 signal credits_changed(credits: int)
 signal base_health_changed(current_health: int, max_health: int)
@@ -64,6 +71,7 @@ var _wave_number: int = 0
 var _base_health: int = 0
 var _run_active: bool = false
 var _seconds_to_wave: int = -1
+var _landing_phase: LandingPhase = LandingPhase.DONE
 
 ## One lane per active approach vector. Every enemy on a lane reads the same
 ## polyline — the count scales with lanes, not with units (CLAUDE.md rule 2).
@@ -122,6 +130,8 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 			return _call_orbital_strike(payload)
 		Command.TICK_ABILITIES:
 			return _tick_abilities(payload)
+		Command.SET_LANDING_PHASE:
+			return _set_landing_phase(payload)
 		Command.SET_WAVE_COUNTDOWN:
 			return _set_wave_countdown(payload)
 		Command.WARN_WAVE:
@@ -154,6 +164,15 @@ func get_credits() -> int:
 
 func get_wave_number() -> int:
 	return _wave_number
+
+
+func get_landing_phase() -> LandingPhase:
+	return _landing_phase
+
+
+## Nothing that constitutes "the mission" runs until this is true.
+func is_landed() -> bool:
+	return _landing_phase == LandingPhase.DONE
 
 
 ## Seconds until the next wave, or -1 when one is already arriving.
@@ -331,6 +350,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 	_enemy_health.clear()
 	_enemy_stats.clear()
 	_strike_cooldown = 0.0
+	_landing_phase = LandingPhase.DESCENT if bool(payload.get("awaiting_landing", false)) else LandingPhase.DONE
 	_upgrade_levels.clear()
 	_enemy_paths = []
 	_lane_names = PackedStringArray()
@@ -346,6 +366,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 	base_health_changed.emit(_base_health, _config.base_max_health)
 	income_changed.emit(get_income_per_second())
 	orbital_cooldown_changed.emit(_strike_cooldown)
+	landing_phase_changed.emit(_landing_phase)
 	for structure: Node3D in _structures:
 		structure_damaged.emit(structure, _structure_health[structure], _config.extractor_max_health)
 	return true
@@ -378,6 +399,15 @@ func _set_enemy_paths(payload: Dictionary) -> bool:
 	while _lane_names.size() < paths.size():
 		_lane_names.append("LANE %d" % (_lane_names.size() + 1))
 	enemy_paths_ready.emit(_enemy_paths)
+	return true
+
+
+func _set_landing_phase(payload: Dictionary) -> bool:
+	var phase: LandingPhase = payload.get("phase", LandingPhase.DONE)
+	if phase == _landing_phase:
+		return false
+	_landing_phase = phase
+	landing_phase_changed.emit(phase)
 	return true
 
 
@@ -491,6 +521,7 @@ func _call_orbital_strike(payload: Dictionary) -> bool:
 	_strike_cooldown = stats.cooldown
 	credits_changed.emit(_credits)
 	orbital_cooldown_changed.emit(_strike_cooldown)
+	landing_phase_changed.emit(_landing_phase)
 	orbital_strike_called.emit(strike.global_position)
 	return true
 
@@ -507,6 +538,7 @@ func _tick_abilities(payload: Dictionary) -> bool:
 		return false
 	_strike_cooldown = maxf(0.0, _strike_cooldown - delta)
 	orbital_cooldown_changed.emit(_strike_cooldown)
+	landing_phase_changed.emit(_landing_phase)
 	return true
 
 

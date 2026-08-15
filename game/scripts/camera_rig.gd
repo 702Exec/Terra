@@ -42,6 +42,14 @@ var _pitch_sine: float = 1.0
 
 var _focus: Vector3 = Vector3.ZERO
 
+## Impact shake. Applied on top of the clamped focus so it never moves the
+## camera's actual position in the world — a shaken camera that drifts is worse
+## than no shake at all.
+var _shake_remaining: float = 0.0
+var _shake_duration: float = 0.0
+var _shake_strength: float = 0.0
+var _shake_offset: Vector3 = Vector3.ZERO
+
 
 func _ready() -> void:
 	add_to_group("camera_rig")
@@ -67,6 +75,18 @@ func _on_mission_started() -> void:
 
 
 func _process(delta: float) -> void:
+	if _shake_remaining > 0.0:
+		_shake_remaining = maxf(0.0, _shake_remaining - delta)
+		# Decays over its lifetime so it settles rather than stopping dead.
+		var falloff: float = _shake_remaining / maxf(0.001, _shake_duration)
+		var amount: float = _shake_strength * falloff * falloff
+		_shake_offset = Vector3(
+			randf_range(-amount, amount), randf_range(-amount, amount), randf_range(-amount, amount))
+		_apply()
+	elif _shake_offset != Vector3.ZERO:
+		_shake_offset = Vector3.ZERO
+		_apply()
+
 	var move: Vector2 = Vector2(
 		float(Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT))
 			- float(Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)),
@@ -92,6 +112,19 @@ func pan_by_screen_delta(screen_delta: Vector2) -> void:
 		-screen_delta.y * units_per_pixel / _pitch_sine
 	)
 	_apply()
+
+
+## Direct zoom, for the landing sequence framing the Spire. Player zoom goes
+## through `zoom_by_steps`.
+func set_zoom(size: float) -> void:
+	camera.size = clampf(size, min_zoom, max_zoom)
+	_apply()
+
+
+func shake(strength: float, duration: float) -> void:
+	_shake_strength = maxf(_shake_strength, strength)
+	_shake_duration = maxf(_shake_duration, duration)
+	_shake_remaining = maxf(_shake_remaining, duration)
 
 
 func zoom_by_steps(steps: float) -> void:
@@ -124,4 +157,4 @@ func _apply() -> void:
 
 	_focus.x = clampf(_focus.x, -limit_x, limit_x)
 	_focus.z = clampf(_focus.z, -limit_z, limit_z)
-	camera.global_position = _focus + camera_offset
+	camera.global_position = _focus + camera_offset + _shake_offset

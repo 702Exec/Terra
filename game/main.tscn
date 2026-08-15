@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://5pprr0vv13ss"]
+[gd_scene load_steps=40 format=3 uid="uid://5pprr0vv13ss"]
 
 [ext_resource type="Script" path="res://scripts/mission.gd" id="1_mission"]
 [ext_resource type="Script" path="res://scripts/nav_path_service.gd" id="2_path"]
@@ -27,6 +27,10 @@
 [ext_resource type="Script" path="res://scripts/ability_ticker.gd" id="25_ability"]
 [ext_resource type="AudioStream" path="res://assets/audio/orbital_charge.wav" id="26_charge"]
 [ext_resource type="AudioStream" path="res://assets/audio/orbital_impact.wav" id="27_impact"]
+[ext_resource type="PackedScene" path="res://scenes/landing_sequence.tscn" id="28_landing"]
+[ext_resource type="AudioStream" path="res://assets/audio/landing_descent.wav" id="29_descent"]
+[ext_resource type="AudioStream" path="res://assets/audio/landing_impact.wav" id="30_land"]
+[ext_resource type="AudioStream" path="res://assets/audio/engine_wake.wav" id="31_wake"]
 
 [sub_resource type="Environment" id="Environment_battle"]
 background_mode = 1
@@ -49,7 +53,7 @@ geometry_parsed_geometry_type = 1
 geometry_collision_mask = 1
 agent_radius = 0.75
 
-[node name="Main" type="Node3D" node_paths=PackedStringArray("base_structure", "enemy_root", "turret_root", "structure_root", "effect_root")]
+[node name="Main" type="Node3D" node_paths=PackedStringArray("base_structure", "enemy_root", "turret_root", "structure_root", "effect_root", "landing_sequence")]
 script = ExtResource("1_mission")
 config = ExtResource("6_config")
 base_structure = NodePath("BaseStructure")
@@ -57,6 +61,7 @@ enemy_root = NodePath("Enemies")
 turret_root = NodePath("Turrets")
 structure_root = NodePath("Structures")
 effect_root = NodePath("Effects")
+landing_sequence = NodePath("LandingSequence")
 enemy_scene = ExtResource("8_enemy")
 turret_scene = ExtResource("9_turret")
 strike_scene = ExtResource("24_strike")
@@ -171,6 +176,10 @@ camera = NodePath("../Camera")
 camera_rig = NodePath("../CameraRig")
 placement_marker = NodePath("../PlacementMarker")
 
+[node name="LandingSequence" parent="." node_paths=PackedStringArray("spire", "camera_rig") instance=ExtResource("28_landing")]
+spire = NodePath("../BaseStructure")
+camera_rig = NodePath("../CameraRig")
+
 [node name="Abilities" type="Node" parent="."]
 script = ExtResource("25_ability")
 
@@ -188,5 +197,8 @@ turret_sold = ExtResource("22_sold")
 run_over = ExtResource("23_over")
 orbital_charge = ExtResource("26_charge")
 orbital_impact = ExtResource("27_impact")
+landing_descent = ExtResource("29_descent")
+landing_impact = ExtResource("30_land")
+engine_wake = ExtResource("31_wake")
 
 [node name="HUD" parent="." instance=ExtResource("11_hud")]
