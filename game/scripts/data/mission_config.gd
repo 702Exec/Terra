@@ -27,6 +27,15 @@ extends Resource
 ## Orbital fire support. Null disables the ability entirely.
 @export var orbital_strike: OrbitalStrikeStats
 
+@export_group("Cinematics")
+## The Spire leaving the Aegis. Shared across every world, so whatever is framed
+## below the ship must not identify a planet.
+@export var launch_cinematic: VideoStream
+## The arrival. Varies by biome rather than by world — five sets cover twenty
+## worlds, which is the same argument section 5 of the design doc makes for
+## terrain art. Null on both falls back to the grey-box landing.
+@export var landing_cinematic: VideoStream
+
 @export_group("Battlefield")
 ## Half-extent of the ground plane. Drives the camera's pan limits and the
 ## minimap's scale, so it must match the ground mesh in the scene.

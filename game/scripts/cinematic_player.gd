@@ -13,7 +13,9 @@ extends CanvasLayer
 ## Skippable by default and it should stay that way: this plays at the start of
 ## a mission the player may retry a dozen times.
 
-## Played in order. Two ten-second clips make a twenty-second opener.
+## Fallback queue, for running this scene on its own. In a mission the clips
+## come from MissionConfig instead — launch then landing — so which arrival
+## plays is a property of the world rather than of the scene.
 @export var clips: Array[VideoStream] = []
 @export var skippable: bool = true
 ## Ignores input for a moment after the cinematic starts, so a click that was
@@ -26,6 +28,7 @@ signal finished()
 @onready var video: VideoStreamPlayer = $Frame/Video
 @onready var skip_hint: Label = $SkipHint
 
+var _queue: Array[VideoStream] = []
 var _index: int = 0
 var _playing: bool = false
 var _elapsed: float = 0.0
@@ -41,13 +44,29 @@ func _ready() -> void:
 
 
 func has_clips() -> bool:
-	return not clips.is_empty()
+	return not _resolve_clips().is_empty()
+
+
+## Launch is shared across worlds, landing is per biome. Either may be null —
+## a world with no footage yet still gets the other, and a world with neither
+## falls through to the grey-box sequence.
+func _resolve_clips() -> Array[VideoStream]:
+	var config: MissionConfig = GameCommands.get_mission_config()
+	if config == null:
+		return clips
+	var queue: Array[VideoStream] = []
+	if config.launch_cinematic != null:
+		queue.append(config.launch_cinematic)
+	if config.landing_cinematic != null:
+		queue.append(config.landing_cinematic)
+	return queue if not queue.is_empty() else clips
 
 
 func play() -> void:
 	if not has_clips():
 		finished.emit()
 		return
+	_queue = _resolve_clips()
 	_index = 0
 	_elapsed = 0.0
 	_playing = true
@@ -89,7 +108,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start_clip() -> void:
 	_ratio_set = false
-	video.stream = clips[_index]
+	video.stream = _queue[_index]
 	video.play()
 
 
@@ -97,7 +116,7 @@ func _on_clip_finished() -> void:
 	if not _playing:
 		return
 	_index += 1
-	if _index >= clips.size():
+	if _index >= _queue.size():
 		_finish()
 		return
 	_start_clip()
