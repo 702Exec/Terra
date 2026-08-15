@@ -13,7 +13,9 @@ extends Resource
 ## 8 and everything past that has to come from enemy composition (tougher
 ## archetypes), which is the design doc's higher-ranked knob anyway.
 
-@export var enemy_stats: EnemyStats
+## Which archetypes make up a wave, and from which wave each joins. Escalation
+## past the count ceiling lives here.
+@export var entries: Array[WaveEntry] = []
 
 @export_group("Size")
 ## Enemies in wave 1.
@@ -67,6 +69,47 @@ func count_for_wave(wave_number: int) -> int:
 	if not is_finite(raw) or raw >= float(max_wave_count):
 		return max_wave_count
 	return maxi(1, int(round(raw)))
+
+
+## The archetypes present on `wave_number`.
+func entries_for_wave(wave_number: int) -> Array[WaveEntry]:
+	var available: Array[WaveEntry] = []
+	for entry: WaveEntry in entries:
+		if entry != null and entry.stats != null and entry.from_wave <= wave_number:
+			available.append(entry)
+	return available
+
+
+## Deals a wave out by weight rather than rolling per spawn, so a wave always
+## contains the mix its composition promises instead of occasionally containing
+## none of the archetype the player prepared for.
+func composition_for_wave(wave_number: int, enemy_count: int) -> Array[EnemyStats]:
+	var available: Array[WaveEntry] = entries_for_wave(wave_number)
+	var roster: Array[EnemyStats] = []
+	if available.is_empty() or enemy_count <= 0:
+		return roster
+
+	var total_weight: float = 0.0
+	for entry: WaveEntry in available:
+		total_weight += maxf(0.0, entry.weight)
+	if total_weight <= 0.0:
+		for index: int in range(enemy_count):
+			roster.append(available[index % available.size()].stats)
+		return roster
+
+	# Whole allocations first, then hand the rounding remainder to the commonest
+	# archetype so the count always lands exactly.
+	var largest: WaveEntry = available[0]
+	for entry: WaveEntry in available:
+		if entry.weight > largest.weight:
+			largest = entry
+		var share: int = int(floorf(float(enemy_count) * maxf(0.0, entry.weight) / total_weight))
+		for _i: int in range(share):
+			roster.append(entry.stats)
+	while roster.size() < enemy_count:
+		roster.append(largest.stats)
+	roster.shuffle()
+	return roster
 
 
 ## Gap between individual spawns, tightened so that large waves still finish

@@ -129,6 +129,18 @@ Listing the families rather than the counts is the right resolution — it tells
 
 ## Where the prototype is
 
-The grey-box currently fields one enemy type, which is the **Mite** with placeholder stats. Everything above is unbuilt.
+**Mite, Spitter, and Carapace are built.** Drifter, the apex defenders, and the Earth roster are not.
 
-The cheapest next step is not the whole roster — it is **Spitter and Carapace**. Those two prove the counter loop: does having the wrong composition actually feel like a loss you could have prevented? If yes, the rest of the roster is worth building. If the player just adds more turrets and wins anyway, the counter system is not carrying its weight and the roster should shrink rather than grow.
+Because the player roster does not exist yet, the prototype expresses the counters through **turret upgrades** rather than unit choice. The shape is the same — the wrong preparation loses — and it is what makes the counter loop testable now:
+
+| Enemy | Prototype counter | Measured |
+|---|---|---|
+| **Carapace** (armour 6) | Weapons track | At L0 a turret needs 30 shots (13.5s) to kill one. At L2, 13 shots (5.9s). At L5, 7 shots (3.1s). |
+| **Spitter** (range 10) | Optics track | Turret reach is 8. It stays outranged at Optics L0 and L1, and can finally return fire at L2 (11.0). |
+| **Mite** | Volume of fire | Dies to anything; punishes single-target focus by arriving in numbers. |
+
+Armour is flat, not percentage, and floors at 1 damage — an outmatched turret line should feel outmatched, not broken.
+
+Composition arrives on schedule: wave 1 is all Mites, Spitters join at wave 2, Carapace at wave 4, holding a 6 : 3 : 1.5 weighting thereafter. Waves are dealt by weight up front rather than rolled per spawn, so a wave always contains the mix its composition promises.
+
+**The open question is whether this feels like a preventable loss.** If the answer is that the player just builds more turrets and wins anyway, the counter system is not carrying its weight and the roster should shrink rather than grow.

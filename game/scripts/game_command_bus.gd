@@ -71,6 +71,14 @@ var _lane_names: PackedStringArray = PackedStringArray()
 ## Enemy health lives here, not on the enemy node, so that every hitpoint in the
 ## mission is owned by one authority.
 var _enemy_health: Dictionary[Node3D, int] = {}
+## Archetype per live enemy, so armour is applied by the same authority that
+## owns the hitpoints rather than trusted from the attacker.
+var _enemy_stats: Dictionary[Node3D, EnemyStats] = {}
+
+## However heavy the armour, a hit always does at least this much — otherwise an
+## under-upgraded turret line does literally nothing and reads as broken rather
+## than as outmatched.
+const MIN_DAMAGE: int = 1
 
 ## Destructible player structures — extractors today. Held as a cached array as
 ## well as a health map because every living enemy scans it every frame looking
@@ -290,6 +298,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 		return false
 
 	_enemy_health.clear()
+	_enemy_stats.clear()
 	_upgrade_levels.clear()
 	_enemy_paths = []
 	_lane_names = PackedStringArray()
@@ -474,6 +483,7 @@ func _spawn_enemy(payload: Dictionary) -> bool:
 	enemy.global_position = Vector3(spawn_position.x, 0.0, spawn_position.z)
 
 	_enemy_health[enemy] = stats.max_health
+	_enemy_stats[enemy] = stats
 	enemy_spawned.emit(enemy)
 	return true
 
@@ -484,12 +494,17 @@ func _damage_enemy(payload: Dictionary) -> bool:
 	if enemy == null or amount <= 0 or not _enemy_health.has(enemy):
 		return false
 
-	var remaining: int = _enemy_health[enemy] - amount
+	var archetype: EnemyStats = _enemy_stats.get(enemy, null)
+	var armor: int = 0 if archetype == null else archetype.armor
+	var effective: int = maxi(MIN_DAMAGE, amount - armor)
+
+	var remaining: int = _enemy_health[enemy] - effective
 	if remaining > 0:
 		_enemy_health[enemy] = remaining
 		return true
 
 	_enemy_health.erase(enemy)
+	_enemy_stats.erase(enemy)
 	enemy_died.emit(enemy)
 	enemy.queue_free()
 	return true

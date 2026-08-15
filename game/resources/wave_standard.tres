@@ -1,11 +1,32 @@
-[gd_resource type="Resource" script_class="WaveConfig" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="WaveConfig" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/wave_config.gd" id="1_wave_config"]
-[ext_resource type="Resource" path="res://resources/enemy_grunt.tres" id="2_enemy_grunt"]
+[ext_resource type="Script" path="res://scripts/data/wave_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://resources/enemy_mite.tres" id="3_mite"]
+[ext_resource type="Resource" path="res://resources/enemy_spitter.tres" id="4_spitter"]
+[ext_resource type="Resource" path="res://resources/enemy_carapace.tres" id="5_carapace"]
+
+[sub_resource type="Resource" id="Entry_mite"]
+script = ExtResource("2_entry")
+stats = ExtResource("3_mite")
+from_wave = 1
+weight = 6.0
+
+[sub_resource type="Resource" id="Entry_spitter"]
+script = ExtResource("2_entry")
+stats = ExtResource("4_spitter")
+from_wave = 2
+weight = 3.0
+
+[sub_resource type="Resource" id="Entry_carapace"]
+script = ExtResource("2_entry")
+stats = ExtResource("5_carapace")
+from_wave = 4
+weight = 1.5
 
 [resource]
 script = ExtResource("1_wave_config")
-enemy_stats = ExtResource("2_enemy_grunt")
+entries = Array[Resource]([SubResource("Entry_mite"), SubResource("Entry_spitter"), SubResource("Entry_carapace")])
 first_wave_count = 6
 count_multiplier = 2.0
 max_wave_count = 400

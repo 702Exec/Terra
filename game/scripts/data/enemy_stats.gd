@@ -1,22 +1,40 @@
 class_name EnemyStats
 extends Resource
 
-## Tuning for one enemy archetype. Stat inflation is the weakest difficulty knob
-## (design doc §4), so these numbers stay flat across worlds — difficulty comes
-## from lanes, wave gap, and composition instead.
+## Tuning for one enemy archetype.
+##
+## Stats stay flat across worlds (design doc §4 ranks inflation last). What
+## escalates is which archetypes appear and in what mix — you out-compose a
+## world rather than out-level it.
 
-@export var display_name: String = "Grunt"
+@export var display_name: String = "Mite"
+
+@export_group("Durability")
 @export var max_health: int = 40
-@export var move_speed: float = 3.2
-## Damage dealt to the base per attack once the enemy is in contact.
-@export var contact_damage: int = 15
-@export var attack_interval: float = 1.0
-## How close the enemy has to get to the base before it stops and attacks.
-@export var contact_range: float = 3.6
-## How far off its lane an enemy will divert to tear down a player structure.
-## Wide enough that a node sitting in the lane is reliably attacked, narrow
-## enough that one built well off the lane is genuinely safer.
-@export var structure_aggro_range: float = 4.5
-## Random lateral spread applied to the shared path so a wave reads as a mass
+## Flat reduction applied to every incoming hit, floored at MIN_DAMAGE in the
+## bus. Flat rather than percentage on purpose: it punishes many weak shots and
+## rewards fewer heavy ones, which is what makes an armoured wave a reason to
+## buy Weapons rather than a reason to build more turrets.
+@export var armor: int = 0
+
+@export_group("Movement")
+@export var move_speed: float = 4.0
+## Random lateral spread applied to the shared lane so a wave reads as a mass
 ## rather than a single-file queue.
 @export var lane_spread: float = 2.5
+
+@export_group("Attack")
+@export var attack_damage: int = 15
+@export var attack_interval: float = 1.0
+## How close this unit needs to be before it stops and attacks, and how far off
+## its lane it will divert to reach something. A melee archetype has to walk
+## into its target; a ranged one stops short and works from standoff, which is
+## what lets it out-reach an un-upgraded turret line.
+@export var attack_range: float = 3.6
+## Ranged units draw a firing beam. Purely presentational.
+@export var ranged: bool = false
+
+@export_group("Appearance")
+@export var body_color: Color = Color(0.85, 0.26, 0.2)
+@export var body_radius: float = 0.35
+@export var body_height: float = 1.4

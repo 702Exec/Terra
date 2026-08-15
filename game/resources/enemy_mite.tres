@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Mite"
+max_health = 40
+armor = 0
+move_speed = 4.0
+lane_spread = 2.5
+attack_damage = 15
+attack_interval = 1.0
+attack_range = 3.6
+ranged = false
+body_color = Color(0.87, 0.29, 0.22, 1)
+body_radius = 0.35
+body_height = 1.4

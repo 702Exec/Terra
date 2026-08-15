@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Spitter"
+max_health = 55
+armor = 2
+move_speed = 2.6
+lane_spread = 3.5
+attack_damage = 22
+attack_interval = 1.6
+attack_range = 10.0
+ranged = true
+body_color = Color(0.95, 0.62, 0.16, 1)
+body_radius = 0.4
+body_height = 1.7

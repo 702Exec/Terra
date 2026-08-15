@@ -27,6 +27,7 @@ var _pending_spawns: int = 0
 var _next_wave_number: int = 1
 var _wave_lanes: PackedInt32Array = PackedInt32Array()
 var _lane_cursor: int = 0
+var _roster: Array[EnemyStats] = []
 
 
 func _ready() -> void:
@@ -42,8 +43,8 @@ func _ready() -> void:
 ## waits on the paths rather than on mission start.
 func _on_enemy_paths_ready(_paths: Array[PackedVector3Array]) -> void:
 	_config = GameCommands.get_wave_config()
-	if _config == null or _config.enemy_stats == null:
-		push_warning("WaveDirector has no wave config; no waves will run.")
+	if _config == null or _config.entries.is_empty():
+		push_warning("WaveDirector has no wave composition; no waves will run.")
 		return
 	_schedule_next_wave()
 
@@ -98,6 +99,9 @@ func _on_wave_timer_timeout() -> void:
 	_pending_spawns = count
 	_wave_lanes = _lanes_for(wave_number)
 	_lane_cursor = 0
+	# Dealt up front rather than rolled per spawn, so a wave always contains the
+	# mix its composition promises.
+	_roster = _config.composition_for_wave(wave_number, count)
 	# Big waves arrive faster per unit so that they still land as a wave rather
 	# than a stream that never ends.
 	spawn_timer.wait_time = _config.spawn_interval_for_wave(count)
@@ -119,12 +123,15 @@ func _on_spawn_timer_timeout() -> void:
 func _spawn_one() -> void:
 	if _pending_spawns <= 0 or _wave_lanes.is_empty():
 		return
+	if _roster.is_empty():
+		return
 	_pending_spawns -= 1
 
 	var lane_index: int = _wave_lanes[_lane_cursor % _wave_lanes.size()]
 	_lane_cursor += 1
+	var archetype: EnemyStats = _roster[_lane_cursor % _roster.size()]
 	GameCommands.submit(GameCommandBus.Command.SPAWN_ENEMY, {
-		"stats": _config.enemy_stats,
+		"stats": archetype,
 		"lane_index": lane_index,
 		"position": _scattered_spawn_position(lane_index),
 	})

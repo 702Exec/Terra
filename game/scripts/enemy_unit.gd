@@ -1,21 +1,24 @@
 class_name EnemyUnit
 extends Node3D
 
-## A native defender walking the invasion lane toward the harvest base.
+## A native defender walking the invasion lane toward the harvest engine.
 ##
-## Lineage: this is the XZ-plane movement driver from the old command_unit.gd,
-## with the selection concern removed. Its forward basis is -Z, so look_at keeps
-## travel facing consistent with the rest of the world math.
+## Lineage: the XZ-plane movement driver from the old command_unit.gd, with the
+## selection concern removed. Forward basis is -Z.
 ##
-## Two things this unit deliberately does not own:
+## Three things this unit deliberately does not own:
 ##
-## 1. Its own pathfinding agent. Every enemy reads the same precomputed lane
-##    (CLAUDE.md rule 2) with a per-unit lateral offset so the column reads as a
-##    mass. When counts get high this swaps for a flow-field lookup and nothing
-##    else in the file has to change.
-## 2. Its own hitpoints. Health lives in GameCommandBus, which is the only thing
-##    allowed to kill it.
+## 1. Its own pathfinding agent. Every enemy on a lane reads the same precomputed
+##    polyline (CLAUDE.md rule 2) with a per-unit lateral offset. Diversions to
+##    attack a structure are straight-line moves, never path queries, so unit
+##    count never multiplies the solve count.
+## 2. Its own hitpoints or armour. Both live in GameCommandBus, which is the
+##    only thing allowed to kill it.
+## 3. Its own mesh or material. Those are cached per archetype and shared, so a
+##    wave of four hundred allocates neither.
 
+@onready var visual: MeshInstance3D = $Visual
+@onready var beam: MeshInstance3D = $Beam
 @onready var attack_timer: Timer = $AttackTimer
 
 ## Injected by the bus before the node enters the tree.
@@ -25,21 +28,30 @@ var target_base: Node3D = null
 
 var _path_index: int = 0
 var _lane_offset: Vector3 = Vector3.ZERO
-var _in_contact: bool = false
-## What this unit is currently chewing on: null means the base.
+var _engaged: bool = false
+## What this unit is attacking: null means the base.
 var _structure_target: Node3D = null
 
 const ARRIVAL_EPSILON: float = 0.25
+const BEAM_FLASH_SECONDS: float = 0.08
+const MUZZLE_HEIGHT: float = 0.8
+
+## One mesh and one material per archetype, shared by every instance of it.
+static var _mesh_cache: Dictionary[EnemyStats, CapsuleMesh] = {}
+static var _material_cache: Dictionary[EnemyStats, StandardMaterial3D] = {}
 
 
 func _ready() -> void:
 	add_to_group("enemy")
+	beam.visible = false
 	if stats == null:
 		set_process(false)
 		return
 
-	# The offset is per-unit and constant, so the whole wave shares one path but
-	# arrives as a spread front rather than a single-file line.
+	visual.mesh = _mesh_for(stats)
+	visual.material_override = _material_for(stats)
+	visual.position.y = stats.body_height * 0.5
+
 	var spread: float = stats.lane_spread
 	_lane_offset = Vector3(randf_range(-spread, spread), 0.0, randf_range(-spread, spread))
 
@@ -49,27 +61,41 @@ func _ready() -> void:
 	_advance_to_nearest_waypoint()
 
 
+static func _mesh_for(archetype: EnemyStats) -> CapsuleMesh:
+	if not _mesh_cache.has(archetype):
+		var mesh := CapsuleMesh.new()
+		mesh.radius = archetype.body_radius
+		mesh.height = maxf(archetype.body_height, archetype.body_radius * 2.0 + 0.01)
+		_mesh_cache[archetype] = mesh
+	return _mesh_cache[archetype]
+
+
+static func _material_for(archetype: EnemyStats) -> StandardMaterial3D:
+	if not _material_cache.has(archetype):
+		var material := StandardMaterial3D.new()
+		material.albedo_color = archetype.body_color
+		_material_cache[archetype] = material
+	return _material_cache[archetype]
+
+
 func _process(delta: float) -> void:
-	if _in_contact:
-		# A structure under attack can die under someone else's fire; when it
-		# does, resume the walk rather than standing over the wreck.
+	if _engaged:
+		# A target can die under someone else's fire; when it does, resume.
 		if _structure_target != null and not _is_target_live(_structure_target):
-			_leave_contact()
+			_disengage()
 		return
 
-	# Anything of the player's standing near the lane gets torn down on the way
-	# past. This is what makes a forward extractor genuinely exposed while the
-	# lane solve stays untouched.
-	var structure: Node3D = _nearest_structure_in_reach()
+	var structure: Node3D = _nearest_structure_in_range()
 	if structure != null:
-		_enter_contact(structure)
+		_engage(structure)
 		return
 
-	if target_base != null and _flat_distance(global_position, target_base.global_position) <= stats.contact_range:
-		_enter_contact(null)
+	if target_base != null and _flat_distance(global_position, target_base.global_position) <= stats.attack_range:
+		_engage(null)
 		return
+
 	if _path_index >= path.size():
-		_enter_contact(null)
+		_engage(null)
 		return
 
 	var offset: Vector3 = _waypoint(_path_index) - global_position
@@ -77,7 +103,7 @@ func _process(delta: float) -> void:
 	if offset.length() <= ARRIVAL_EPSILON:
 		_path_index += 1
 		if _path_index >= path.size():
-			_enter_contact(null)
+			_engage(null)
 		return
 
 	var direction: Vector3 = offset.normalized()
@@ -85,8 +111,8 @@ func _process(delta: float) -> void:
 	look_at(global_position + direction, Vector3.UP)
 
 
-## The lane offset is faded out over the final waypoint so units converge on the
-## base instead of orbiting it at a fixed distance.
+## The lane offset fades out on the final waypoint so units converge on the
+## engine rather than orbiting it at a fixed distance.
 func _waypoint(index: int) -> Vector3:
 	var point: Vector3 = path[index]
 	if index >= path.size() - 1:
@@ -94,8 +120,6 @@ func _waypoint(index: int) -> Vector3:
 	return point + _lane_offset
 
 
-## Spawned units start at the head of the path, but a unit dropped anywhere on
-## the map should still pick a sensible entry point.
 func _advance_to_nearest_waypoint() -> void:
 	var best_index: int = 0
 	var best_distance: float = INF
@@ -107,11 +131,11 @@ func _advance_to_nearest_waypoint() -> void:
 	_path_index = best_index
 
 
-## The cached structure list comes straight off the bus, so this costs a handful
-## of distance checks per enemy per frame with no allocation.
-func _nearest_structure_in_reach() -> Node3D:
+## Served from the bus's cached array, so this costs a handful of distance
+## checks per enemy per frame with no allocation.
+func _nearest_structure_in_range() -> Node3D:
 	var nearest: Node3D = null
-	var nearest_distance: float = stats.structure_aggro_range
+	var nearest_distance: float = stats.attack_range
 	for structure: Node3D in GameCommands.get_attackable_structures():
 		if not is_instance_valid(structure):
 			continue
@@ -128,20 +152,22 @@ func _is_target_live(structure: Node3D) -> bool:
 	return GameCommands.get_attackable_structures().has(structure)
 
 
-## `structure` of null means the target is the base, which ends the walk.
-func _enter_contact(structure: Node3D) -> void:
-	if _in_contact:
+## `structure` of null means the target is the engine, which ends the walk.
+func _engage(structure: Node3D) -> void:
+	if _engaged:
 		return
-	_in_contact = true
+	_engaged = true
 	_structure_target = structure
 	if structure == null:
 		_path_index = path.size()
+	else:
+		_face(structure.global_position)
 	_strike()
 	attack_timer.start()
 
 
-func _leave_contact() -> void:
-	_in_contact = false
+func _disengage() -> void:
+	_engaged = false
 	_structure_target = null
 	attack_timer.stop()
 
@@ -151,19 +177,51 @@ func _on_attack_timer_timeout() -> void:
 
 
 func _strike() -> void:
+	var target: Node3D = _structure_target if _structure_target != null else target_base
+	if target == null:
+		return
+	if stats.ranged:
+		_flash_beam(target.global_position)
+
 	if _structure_target != null:
 		GameCommands.submit(GameCommandBus.Command.DAMAGE_STRUCTURE, {
 			"structure": _structure_target,
-			"amount": stats.contact_damage,
+			"amount": stats.attack_damage,
 			"source": self,
 		})
 		return
-	if target_base == null:
-		return
 	GameCommands.submit(GameCommandBus.Command.DAMAGE_BASE, {
-		"amount": stats.contact_damage,
+		"amount": stats.attack_damage,
 		"source": self,
 	})
+
+
+func _face(target_position: Vector3) -> void:
+	var flat := Vector3(target_position.x, global_position.y, target_position.z)
+	if flat.is_equal_approx(global_position):
+		return
+	look_at(flat, Vector3.UP)
+
+
+## Ranged fire needs to be visible from across the map, or a Spitter line
+## killing an extractor from standoff reads as the extractor dying on its own.
+func _flash_beam(target_position: Vector3) -> void:
+	var muzzle: Vector3 = global_position + Vector3.UP * MUZZLE_HEIGHT
+	var hit: Vector3 = target_position + Vector3.UP * 1.2
+	var distance: float = muzzle.distance_to(hit)
+	if distance < 0.01:
+		return
+
+	beam.global_position = muzzle.lerp(hit, 0.5)
+	beam.look_at(hit, Vector3.UP)
+	beam.scale = Vector3(1.0, 1.0, distance)
+	beam.visible = true
+
+	var tween: Tween = create_tween()
+	tween.tween_interval(BEAM_FLASH_SECONDS)
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(beam):
+			beam.visible = false)
 
 
 func _flat_distance(a: Vector3, b: Vector3) -> float:
