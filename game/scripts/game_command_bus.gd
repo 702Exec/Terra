@@ -14,7 +14,7 @@ extends Node
 
 enum Command {
 	BEGIN_MISSION,
-	SET_ENEMY_PATH,
+	SET_ENEMY_PATHS,
 	ADD_CREDITS,
 	PLACE_TURRET,
 	START_WAVE,
@@ -25,7 +25,7 @@ enum Command {
 }
 
 signal mission_started()
-signal enemy_path_ready(path: PackedVector3Array)
+signal enemy_paths_ready(paths: Array[PackedVector3Array])
 signal credits_changed(credits: int)
 signal base_health_changed(current_health: int, max_health: int)
 signal wave_started(wave_number: int, enemy_count: int)
@@ -46,7 +46,10 @@ var _credits: int = 0
 var _wave_number: int = 0
 var _base_health: int = 0
 var _run_active: bool = false
-var _enemy_path: PackedVector3Array = PackedVector3Array()
+
+## One lane per active approach vector. Every enemy on a lane reads the same
+## polyline — the count scales with lanes, not with units (CLAUDE.md rule 2).
+var _enemy_paths: Array[PackedVector3Array] = []
 
 ## Enemy health lives here, not on the enemy node, so that every hitpoint in the
 ## mission is owned by one authority.
@@ -61,8 +64,8 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 	match command:
 		Command.BEGIN_MISSION:
 			return _begin_mission(payload)
-		Command.SET_ENEMY_PATH:
-			return _set_enemy_path(payload)
+		Command.SET_ENEMY_PATHS:
+			return _set_enemy_paths(payload)
 		Command.ADD_CREDITS:
 			return _add_credits(payload)
 		Command.PLACE_TURRET:
@@ -143,8 +146,19 @@ func can_place_turret(world_position: Vector3) -> bool:
 	return true
 
 
-func get_enemy_path() -> PackedVector3Array:
-	return _enemy_path
+func get_lane_count() -> int:
+	return _enemy_paths.size()
+
+
+func get_enemy_paths() -> Array[PackedVector3Array]:
+	return _enemy_paths
+
+
+## Head of a lane — where its enemies enter the map.
+func get_lane_spawn_position(lane_index: int) -> Vector3:
+	if lane_index < 0 or lane_index >= _enemy_paths.size():
+		return Vector3.ZERO
+	return _enemy_paths[lane_index][0]
 
 
 func get_base_node() -> Node3D:
@@ -168,7 +182,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 		return false
 
 	_enemy_health.clear()
-	_enemy_path = PackedVector3Array()
+	_enemy_paths = []
 	_wave_number = 0
 	_credits = _config.starting_credits
 	_base_health = _config.base_max_health
@@ -180,13 +194,17 @@ func _begin_mission(payload: Dictionary) -> bool:
 	return true
 
 
-func _set_enemy_path(payload: Dictionary) -> bool:
-	var path: PackedVector3Array = payload.get("path", PackedVector3Array())
-	if path.size() < 2:
-		command_rejected.emit(Command.SET_ENEMY_PATH, "path needs at least two points")
+func _set_enemy_paths(payload: Dictionary) -> bool:
+	var paths: Array[PackedVector3Array] = payload.get("paths", [] as Array[PackedVector3Array])
+	if paths.is_empty():
+		command_rejected.emit(Command.SET_ENEMY_PATHS, "no lanes supplied")
 		return false
-	_enemy_path = path
-	enemy_path_ready.emit(_enemy_path)
+	for path: PackedVector3Array in paths:
+		if path.size() < 2:
+			command_rejected.emit(Command.SET_ENEMY_PATHS, "a lane needs at least two points")
+			return false
+	_enemy_paths = paths
+	enemy_paths_ready.emit(_enemy_paths)
 	return true
 
 
@@ -233,15 +251,17 @@ func _start_wave(payload: Dictionary) -> bool:
 
 func _spawn_enemy(payload: Dictionary) -> bool:
 	var stats := payload.get("stats", null) as EnemyStats
-	var spawn_position: Vector3 = payload.get("position", Vector3.ZERO)
-	if stats == null or _enemy_path.size() < 2:
+	var lane_index: int = int(payload.get("lane_index", 0))
+	if stats == null or lane_index < 0 or lane_index >= _enemy_paths.size():
 		return false
+	var lane: PackedVector3Array = _enemy_paths[lane_index]
+	var spawn_position: Vector3 = payload.get("position", lane[0])
 
 	var enemy := _enemy_scene.instantiate() as Node3D
 	if enemy == null:
 		return false
 	enemy.set("stats", stats)
-	enemy.set("path", _enemy_path)
+	enemy.set("path", lane)
 	enemy.set("target_base", _base)
 	_enemy_root.add_child(enemy)
 	enemy.global_position = Vector3(spawn_position.x, 0.0, spawn_position.z)
@@ -290,9 +310,11 @@ func _end_run() -> bool:
 # --- Helpers ------------------------------------------------------------------
 
 func _config_spawn_positions() -> Array[Vector3]:
-	if _enemy_path.is_empty():
-		return []
-	return [_enemy_path[0]]
+	var heads: Array[Vector3] = []
+	for path: PackedVector3Array in _enemy_paths:
+		if not path.is_empty():
+			heads.append(path[0])
+	return heads
 
 
 func _flat_distance(a: Vector3, b: Vector3) -> float:

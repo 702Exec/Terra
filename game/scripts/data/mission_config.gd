@@ -15,6 +15,13 @@ extends Resource
 @export var turret_stats: TurretStats
 @export var wave_config: WaveConfig
 
+@export_group("Approach lanes")
+## How many of the map's lane spawns are live this mission. The design doc's
+## strongest difficulty knob (§4): one lane is a chokepoint puzzle, four force
+## you to split and consciously leave something thin. Clamped to the number of
+## spawns the map actually provides.
+@export_range(1, 8) var active_lane_count: int = 4
+
 @export_group("Placement rules")
 ## Half-extent of the placeable battlefield on X and Z.
 @export var battlefield_extent: float = 18.0

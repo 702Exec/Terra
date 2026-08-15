@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_spawn"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.85, 0.26, 0.2, 0.5)
+
+[sub_resource type="TorusMesh" id="Mesh_spawn"]
+inner_radius = 1.5
+outer_radius = 1.9
+
+[node name="LaneSpawn" type="Node3D"]
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+material_override = SubResource("Material_spawn")
+mesh = SubResource("Mesh_spawn")
