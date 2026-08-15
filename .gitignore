@@ -1,0 +1,38 @@
+# Godot 4 — editor cache and import artifacts
+.godot/
+.import/
+
+# Exported builds
+/build/
+/builds/
+/export/
+*.exe
+*.pck
+*.apk
+*.aab
+*.ipa
+*.zip
+
+# Export config — can contain keystore paths and passwords. Keep out of the repo.
+export_presets.cfg
+export.cfg
+
+# Auto-generated translation binaries
+*.translation
+
+# Mono / C# (unused on the standard build, harmless to keep)
+.mono/
+data_*/
+mono_crash.*.json
+
+# Android build template
+/android/
+
+# Editor and OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.vscode/
+.idea/
