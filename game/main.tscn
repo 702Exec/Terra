@@ -132,6 +132,9 @@ one_shot = true
 
 [node name="SpawnTimer" type="Timer" parent="WaveDirector"]
 
+[node name="CountdownTimer" type="Timer" parent="WaveDirector"]
+wait_time = 0.25
+
 [node name="Economy" type="Node" parent="."]
 script = ExtResource("4_economy")
 

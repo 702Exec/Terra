@@ -44,6 +44,8 @@ var _focus: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
+	add_to_group("camera_rig")
+	GameCommands.mission_started.connect(_on_mission_started)
 	if camera == null:
 		push_warning("CameraRig has no camera; pan and zoom are disabled.")
 		set_process(false)
@@ -52,6 +54,15 @@ func _ready() -> void:
 	_pitch_sine = camera_offset.y / offset_flat if offset_flat > 0.001 else 1.0
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = default_zoom
+	_apply()
+
+
+## The ground plane's size is mission data, not scene wiring — the export is a
+## fallback for running this scene on its own.
+func _on_mission_started() -> void:
+	var half: float = GameCommands.get_map_half_extent()
+	if half > 0.0:
+		map_half_extent = half
 	_apply()
 
 

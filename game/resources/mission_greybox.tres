@@ -13,6 +13,7 @@ extractor_credits_per_second = 6.0
 extractor_max_health = 500
 turret_stats = ExtResource("2_turret_pulse")
 wave_config = ExtResource("3_wave_standard")
+map_half_extent = 32.0
 battlefield_extent = 30.0
 turret_min_spacing = 2.0
 turret_min_base_distance = 4.5

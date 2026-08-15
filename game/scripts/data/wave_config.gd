@@ -23,20 +23,27 @@ extends Resource
 ## Hard ceiling on a single wave. Protects frame rate and marks the point where
 ## escalation has to switch from count to composition.
 @export var max_wave_count: int = 400
-## Seconds between individual spawns inside one wave.
+## Longest gap between individual spawns inside one wave.
 @export var spawn_interval: float = 0.2
+## No wave takes longer than this to finish arriving, however large it is. At
+## 400 enemies a flat 0.2s interval would stretch a single wave across 80
+## seconds, which reads as a continuous stream rather than a wave — the gap
+## between waves is the pressure valve, and it only works if waves end.
+@export var spawn_duration_cap: float = 12.0
 
 @export_group("Frequency")
-## Grace period before wave 1 so the player can place an opening turret or two.
-@export var first_wave_delay: float = 15.0
-## Gap before wave 2.
-@export var wave_gap: float = 30.0
+## The preparation phase. Long enough to survey the map, decide which lanes to
+## cover, and commit the opening credits before anything is at stake.
+@export var first_wave_delay: float = 45.0
+## Gap before wave 2. Between-wave time is buying and rebuilding time, so this
+## is the number to raise if the mission feels like it never lets go.
+@export var wave_gap: float = 45.0
 ## Seconds shaved off the gap with every wave.
-@export var wave_gap_shrink: float = 1.0
+@export var wave_gap_shrink: float = 1.5
 ## The gap never drops below this.
-@export var min_wave_gap: float = 14.0
+@export var min_wave_gap: float = 22.0
 ## How long before a wave lands that the base warns about it.
-@export var warning_lead_time: float = 5.0
+@export var warning_lead_time: float = 8.0
 
 @export_group("Approach lanes")
 ## Three parallel arrays, one entry per stage, in ascending wave order.
@@ -60,6 +67,14 @@ func count_for_wave(wave_number: int) -> int:
 	if not is_finite(raw) or raw >= float(max_wave_count):
 		return max_wave_count
 	return maxi(1, int(round(raw)))
+
+
+## Gap between individual spawns, tightened so that large waves still finish
+## arriving inside `spawn_duration_cap`.
+func spawn_interval_for_wave(enemy_count: int) -> float:
+	if enemy_count <= 1:
+		return spawn_interval
+	return minf(spawn_interval, spawn_duration_cap / float(enemy_count))
 
 
 ## Seconds of quiet before `wave_number` begins.

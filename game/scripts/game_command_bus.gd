@@ -17,6 +17,7 @@ enum Command {
 	SET_ENEMY_PATHS,
 	ADD_CREDITS,
 	PLACE_TURRET,
+	SET_WAVE_COUNTDOWN,
 	WARN_WAVE,
 	START_WAVE,
 	SPAWN_ENEMY,
@@ -33,6 +34,7 @@ signal base_health_changed(current_health: int, max_health: int)
 signal structure_damaged(structure: Node3D, current_health: int, max_health: int)
 signal structure_destroyed(structure: Node3D)
 signal income_changed(credits_per_second: float)
+signal wave_countdown_changed(seconds_left: int, wave_number: int)
 signal wave_incoming(wave_number: int, lane_names: PackedStringArray)
 signal wave_started(wave_number: int, enemy_count: int)
 signal enemy_spawned(enemy: Node3D)
@@ -52,6 +54,7 @@ var _credits: int = 0
 var _wave_number: int = 0
 var _base_health: int = 0
 var _run_active: bool = false
+var _seconds_to_wave: int = -1
 
 ## One lane per active approach vector. Every enemy on a lane reads the same
 ## polyline — the count scales with lanes, not with units (CLAUDE.md rule 2).
@@ -86,6 +89,8 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 			return _add_credits(payload)
 		Command.PLACE_TURRET:
 			return _place_turret(payload)
+		Command.SET_WAVE_COUNTDOWN:
+			return _set_wave_countdown(payload)
 		Command.WARN_WAVE:
 			return _warn_wave(payload)
 		Command.START_WAVE:
@@ -116,6 +121,15 @@ func get_credits() -> int:
 
 func get_wave_number() -> int:
 	return _wave_number
+
+
+## Seconds until the next wave, or -1 when one is already arriving.
+func get_seconds_to_wave() -> int:
+	return _seconds_to_wave
+
+
+func get_map_half_extent() -> float:
+	return 0.0 if _config == null else _config.map_half_extent
 
 
 func get_base_health() -> int:
@@ -234,6 +248,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 	_lane_names = PackedStringArray()
 	_register_structures(payload.get("structure_root", null) as Node3D)
 	_wave_number = 0
+	_seconds_to_wave = -1
 	_credits = _config.starting_credits
 	_base_health = _config.base_max_health
 	_run_active = true
@@ -274,6 +289,16 @@ func _set_enemy_paths(payload: Dictionary) -> bool:
 	while _lane_names.size() < paths.size():
 		_lane_names.append("LANE %d" % (_lane_names.size() + 1))
 	enemy_paths_ready.emit(_enemy_paths)
+	return true
+
+
+func _set_wave_countdown(payload: Dictionary) -> bool:
+	var seconds_left: int = int(payload.get("seconds_left", 0))
+	var wave_number: int = int(payload.get("wave_number", 0))
+	if seconds_left == _seconds_to_wave:
+		return false
+	_seconds_to_wave = seconds_left
+	wave_countdown_changed.emit(seconds_left, wave_number)
 	return true
 
 

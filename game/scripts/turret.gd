@@ -25,6 +25,7 @@ const MUZZLE_HEIGHT: float = 0.9
 
 
 func _ready() -> void:
+	add_to_group("turret")
 	beam.visible = false
 	if stats == null:
 		# Without stats there is nothing to fire; leaving the timers stopped is

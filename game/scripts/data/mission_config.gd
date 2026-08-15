@@ -23,6 +23,11 @@ extends Resource
 @export var turret_stats: TurretStats
 @export var wave_config: WaveConfig
 
+@export_group("Battlefield")
+## Half-extent of the ground plane. Drives the camera's pan limits and the
+## minimap's scale, so it must match the ground mesh in the scene.
+@export var map_half_extent: float = 32.0
+
 @export_group("Placement rules")
 ## Half-extent of the placeable battlefield on X and Z.
 @export var battlefield_extent: float = 18.0

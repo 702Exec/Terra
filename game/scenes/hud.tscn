@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/threat_markers.gd" id="2_threat"]
+[ext_resource type="Script" path="res://scripts/minimap.gd" id="3_minimap"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -64,6 +65,22 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 18
 text = "Click the ground to place a turret"
+
+[node name="Minimap" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -212.0
+offset_top = -212.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+clip_contents = true
+script = ExtResource("3_minimap")
 
 [node name="WarningLabel" type="Label" parent="."]
 unique_name_in_owner = true

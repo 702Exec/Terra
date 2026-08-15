@@ -28,6 +28,7 @@ func _ready() -> void:
 	GameCommands.wave_incoming.connect(_on_wave_incoming)
 	GameCommands.income_changed.connect(_on_income_changed)
 	GameCommands.structure_destroyed.connect(_on_structure_destroyed)
+	GameCommands.wave_countdown_changed.connect(_on_wave_countdown_changed)
 	GameCommands.credits_changed.connect(_on_credits_changed)
 	GameCommands.base_health_changed.connect(_on_base_health_changed)
 	GameCommands.wave_started.connect(_on_wave_started)
@@ -40,6 +41,14 @@ func _on_mission_started() -> void:
 
 func _on_wave_started(wave_number: int, enemy_count: int) -> void:
 	wave_label.text = "WAVE  %d   (%d)" % [wave_number, enemy_count]
+
+
+## Between waves the wave readout becomes the preparation clock. Knowing how
+## much time is left is what makes the gap usable rather than merely quiet.
+func _on_wave_countdown_changed(seconds_left: int, wave_number: int) -> void:
+	if seconds_left < 0:
+		return
+	wave_label.text = "WAVE  %d  IN  %d:%02d" % [wave_number, seconds_left / 60, seconds_left % 60]
 
 
 func _on_base_health_changed(current_health: int, max_health: int) -> void:
