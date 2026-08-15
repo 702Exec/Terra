@@ -55,6 +55,20 @@ mouse_filter = 2
 theme_override_font_sizes/font_size = 18
 text = "Click the ground to place a turret"
 
+[node name="WarningLabel" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 0.34
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.72, 0.2, 1)
+theme_override_font_sizes/font_size = 32
+text = "INCOMING"
+horizontal_alignment = 1
+vertical_alignment = 2
+
 [node name="RunOverLabel" type="Label" parent="."]
 unique_name_in_owner = true
 anchors_preset = 15

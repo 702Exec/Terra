@@ -6,10 +6,15 @@
 [resource]
 script = ExtResource("1_wave_config")
 enemy_stats = ExtResource("2_enemy_grunt")
-first_wave_count = 4
-count_growth = 2
-spawn_interval = 0.35
+first_wave_count = 6
+count_multiplier = 2.0
+max_wave_count = 400
+spawn_interval = 0.2
 first_wave_delay = 15.0
 wave_gap = 30.0
 wave_gap_shrink = 1.0
 min_wave_gap = 14.0
+warning_lead_time = 5.0
+lane_stage_waves = PackedInt32Array(1, 3, 10, 15, 20)
+lane_stage_masks = PackedInt32Array(1, 15, 12, 13, 15)
+lane_stage_counts = PackedInt32Array(1, 1, 2, 3, 4)

@@ -1,15 +1,16 @@
 class_name WaveDirector
 extends Node
 
-## Schedules waves and drip-feeds each wave's enemies onto the map.
+## Schedules waves, warns about them, and drip-feeds their enemies onto the map.
 ##
-## Every wave gets bigger and every gap gets shorter, both read off WaveConfig.
-## Enemies are dealt round-robin across the live lanes, so a wave arrives from
-## every approach vector at once rather than as one column — splitting the
-## player's attention is the pressure, not the raw count.
+## Which directions a wave comes from is a property of the wave number, read off
+## WaveConfig's lane stages: the opening waves come from one side, later ones
+## from two, then three, then everything at once. Within a wave the enemies are
+## dealt round-robin across the live lanes so they arrive together rather than
+## as separate columns.
 ##
 ## The director decides *when*; the command bus decides *what happens* — it
-## never touches game state directly, it only submits START_WAVE and
+## never touches game state directly, it only submits WARN_WAVE, START_WAVE and
 ## SPAWN_ENEMY.
 
 ## Spawns are jittered inside this radius so a lane's arrivals do not stack on
@@ -17,16 +18,19 @@ extends Node
 @export var spawn_scatter: float = 2.0
 
 @onready var wave_timer: Timer = $WaveTimer
+@onready var warn_timer: Timer = $WarnTimer
 @onready var spawn_timer: Timer = $SpawnTimer
 
 var _config: WaveConfig = null
 var _pending_spawns: int = 0
 var _next_wave_number: int = 1
-var _next_lane: int = 0
+var _wave_lanes: PackedInt32Array = PackedInt32Array()
+var _lane_cursor: int = 0
 
 
 func _ready() -> void:
 	wave_timer.timeout.connect(_on_wave_timer_timeout)
+	warn_timer.timeout.connect(_on_warn_timer_timeout)
 	spawn_timer.timeout.connect(_on_spawn_timer_timeout)
 	GameCommands.enemy_paths_ready.connect(_on_enemy_paths_ready, CONNECT_ONE_SHOT)
 	GameCommands.run_ended.connect(_on_run_ended)
@@ -44,20 +48,35 @@ func _on_enemy_paths_ready(_paths: Array[PackedVector3Array]) -> void:
 
 
 func _schedule_next_wave() -> void:
-	wave_timer.start(_config.gap_before_wave(_next_wave_number))
+	var gap: float = _config.gap_before_wave(_next_wave_number)
+	wave_timer.start(gap)
+	# The warning rides its own timer so the lead time stays honest even as the
+	# gap shrinks; if the gap is shorter than the lead, the warning fires now.
+	var lead: float = minf(_config.warning_lead_time, gap)
+	warn_timer.start(maxf(0.01, gap - lead))
+
+
+func _on_warn_timer_timeout() -> void:
+	if not GameCommands.is_run_active():
+		return
+	GameCommands.submit(GameCommandBus.Command.WARN_WAVE, {
+		"wave_number": _next_wave_number,
+		"lanes": _lanes_for(_next_wave_number),
+	})
 
 
 func _on_wave_timer_timeout() -> void:
 	if not GameCommands.is_run_active():
 		return
-	var count: int = _config.count_for_wave(_next_wave_number)
+	var wave_number: int = _next_wave_number
+	var count: int = _config.count_for_wave(wave_number)
 	if not GameCommands.submit(GameCommandBus.Command.START_WAVE, {"enemy_count": count}):
 		return
+
 	_next_wave_number += 1
 	_pending_spawns = count
-	# Rotate the starting lane each wave so the same vector is not always first
-	# to arrive.
-	_next_lane = (_next_wave_number - 1) % maxi(1, GameCommands.get_lane_count())
+	_wave_lanes = _lanes_for(wave_number)
+	_lane_cursor = 0
 	_spawn_one()
 	if _pending_spawns > 0:
 		spawn_timer.start()
@@ -74,20 +93,21 @@ func _on_spawn_timer_timeout() -> void:
 
 
 func _spawn_one() -> void:
-	if _pending_spawns <= 0:
-		return
-	var lane_count: int = GameCommands.get_lane_count()
-	if lane_count <= 0:
+	if _pending_spawns <= 0 or _wave_lanes.is_empty():
 		return
 	_pending_spawns -= 1
 
-	var lane_index: int = _next_lane % lane_count
-	_next_lane += 1
+	var lane_index: int = _wave_lanes[_lane_cursor % _wave_lanes.size()]
+	_lane_cursor += 1
 	GameCommands.submit(GameCommandBus.Command.SPAWN_ENEMY, {
 		"stats": _config.enemy_stats,
 		"lane_index": lane_index,
 		"position": _scattered_spawn_position(lane_index),
 	})
+
+
+func _lanes_for(wave_number: int) -> PackedInt32Array:
+	return _config.lanes_for_wave(wave_number, GameCommands.get_lane_count())
 
 
 func _scattered_spawn_position(lane_index: int) -> Vector3:
@@ -101,4 +121,5 @@ func _scattered_spawn_position(lane_index: int) -> Vector3:
 
 func _on_run_ended(_final_wave: int) -> void:
 	wave_timer.stop()
+	warn_timer.stop()
 	spawn_timer.stop()

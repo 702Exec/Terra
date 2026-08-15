@@ -10,9 +10,10 @@ extends Node3D
 ## the single file that swaps for a flow field, and enemy_unit.gd does not
 ## change.
 ##
-## The map supplies the lane spawns as children of `lane_root`; MissionConfig
-## decides how many of them are live, which is what makes lane count a
-## difficulty dial rather than a map edit.
+## The map supplies the lane spawns as children of `lane_root`. Every one of
+## them gets solved; WaveConfig's lane stages decide which are actually used on
+## a given wave, which is what makes lane count a per-wave difficulty dial
+## rather than a map edit.
 
 @export var navigation_region: NavigationRegion3D
 @export var lane_root: Node3D
@@ -66,8 +67,8 @@ func _solve_lane(map: RID, lane: Node3D) -> PackedVector3Array:
 	return PackedVector3Array([from, to])
 
 
-## The map's lane spawns, trimmed to the count this mission runs. Anything the
-## config asks for beyond what the map provides is ignored rather than faked.
+## Every lane spawn the map provides, in child order. That order is what
+## WaveConfig's lane bitmasks index into.
 func _active_lanes() -> Array[Node3D]:
 	var lanes: Array[Node3D] = []
 	if lane_root == null:
@@ -76,11 +77,15 @@ func _active_lanes() -> Array[Node3D]:
 		var lane := child as Node3D
 		if lane != null:
 			lanes.append(lane)
+	return lanes
 
-	var config: MissionConfig = GameCommands.get_mission_config()
-	var wanted: int = lanes.size() if config == null else config.active_lane_count
-	wanted = clampi(wanted, 1, lanes.size())
-	return lanes.slice(0, wanted)
+
+## "LaneNorth" reads as "NORTH" in the incoming-wave warning.
+func _lane_names() -> PackedStringArray:
+	var names: PackedStringArray = PackedStringArray()
+	for lane: Node3D in _active_lanes():
+		names.append(String(lane.name).trim_prefix("Lane").to_upper())
+	return names
 
 
 ## Used when the navmesh is missing or unbakeable. On a flat grey-box plane this
@@ -104,4 +109,7 @@ func _standoff_point(from: Vector3) -> Vector3:
 
 
 func _publish(paths: Array[PackedVector3Array]) -> void:
-	GameCommands.submit(GameCommandBus.Command.SET_ENEMY_PATHS, {"paths": paths})
+	GameCommands.submit(GameCommandBus.Command.SET_ENEMY_PATHS, {
+		"paths": paths,
+		"names": _lane_names(),
+	})

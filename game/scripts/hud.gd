@@ -11,15 +11,21 @@ extends CanvasLayer
 @onready var base_label: Label = %BaseLabel
 @onready var credits_label: Label = %CreditsLabel
 @onready var placement_label: Label = %PlacementLabel
+@onready var warning_label: Label = %WarningLabel
 @onready var run_over_label: Label = %RunOverLabel
 
 const AFFORDABLE_COLOR: Color = Color(0.15, 1.0, 0.9)
 const UNAFFORDABLE_COLOR: Color = Color(0.75, 0.75, 0.8)
+const WARNING_HOLD_SECONDS: float = 3.5
+
+var _warning_tween: Tween = null
 
 
 func _ready() -> void:
 	run_over_label.visible = false
+	warning_label.visible = false
 	GameCommands.mission_started.connect(_on_mission_started)
+	GameCommands.wave_incoming.connect(_on_wave_incoming)
 	GameCommands.credits_changed.connect(_on_credits_changed)
 	GameCommands.base_health_changed.connect(_on_base_health_changed)
 	GameCommands.wave_started.connect(_on_wave_started)
@@ -48,7 +54,25 @@ func _on_credits_changed(credits: int) -> void:
 	)
 
 
+## The base calling out where the next wave is coming from. Text rather than a
+## hover cue, and it names the direction so the player knows which side to look
+## at without hunting for the spawn ring.
+func _on_wave_incoming(wave_number: int, lane_names: PackedStringArray) -> void:
+	var where: String = " · ".join(lane_names) if not lane_names.is_empty() else "ALL SIDES"
+	warning_label.text = "⚠  WAVE %d INCOMING — %s" % [wave_number, where]
+	warning_label.visible = true
+
+	if _warning_tween != null and _warning_tween.is_valid():
+		_warning_tween.kill()
+	warning_label.modulate.a = 1.0
+	_warning_tween = create_tween()
+	_warning_tween.tween_interval(WARNING_HOLD_SECONDS)
+	_warning_tween.tween_property(warning_label, "modulate:a", 0.0, 0.6)
+	_warning_tween.tween_callback(func() -> void: warning_label.visible = false)
+
+
 func _on_run_ended(final_wave: int) -> void:
 	run_over_label.text = "BASE LOST\nSURVIVED %d WAVES" % final_wave
 	run_over_label.visible = true
+	warning_label.visible = false
 	placement_label.text = ""

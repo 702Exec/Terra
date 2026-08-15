@@ -11,7 +11,6 @@ starting_credits = 100
 credits_per_second = 10.0
 turret_stats = ExtResource("2_turret_pulse")
 wave_config = ExtResource("3_wave_standard")
-active_lane_count = 4
 battlefield_extent = 18.0
 turret_min_spacing = 2.0
 turret_min_base_distance = 4.5

@@ -105,6 +105,9 @@ spawn_scatter = 2.0
 [node name="WaveTimer" type="Timer" parent="WaveDirector"]
 one_shot = true
 
+[node name="WarnTimer" type="Timer" parent="WaveDirector"]
+one_shot = true
+
 [node name="SpawnTimer" type="Timer" parent="WaveDirector"]
 
 [node name="Economy" type="Node" parent="."]

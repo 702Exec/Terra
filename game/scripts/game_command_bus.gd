@@ -17,6 +17,7 @@ enum Command {
 	SET_ENEMY_PATHS,
 	ADD_CREDITS,
 	PLACE_TURRET,
+	WARN_WAVE,
 	START_WAVE,
 	SPAWN_ENEMY,
 	DAMAGE_ENEMY,
@@ -28,6 +29,7 @@ signal mission_started()
 signal enemy_paths_ready(paths: Array[PackedVector3Array])
 signal credits_changed(credits: int)
 signal base_health_changed(current_health: int, max_health: int)
+signal wave_incoming(wave_number: int, lane_names: PackedStringArray)
 signal wave_started(wave_number: int, enemy_count: int)
 signal enemy_spawned(enemy: Node3D)
 signal enemy_died(enemy: Node3D)
@@ -51,6 +53,10 @@ var _run_active: bool = false
 ## polyline — the count scales with lanes, not with units (CLAUDE.md rule 2).
 var _enemy_paths: Array[PackedVector3Array] = []
 
+## Human-readable name per lane, parallel to `_enemy_paths`. Used by the
+## incoming-wave warning so the player knows which side to look at.
+var _lane_names: PackedStringArray = PackedStringArray()
+
 ## Enemy health lives here, not on the enemy node, so that every hitpoint in the
 ## mission is owned by one authority.
 var _enemy_health: Dictionary[Node3D, int] = {}
@@ -70,6 +76,8 @@ func submit(command: Command, payload: Dictionary = {}) -> bool:
 			return _add_credits(payload)
 		Command.PLACE_TURRET:
 			return _place_turret(payload)
+		Command.WARN_WAVE:
+			return _warn_wave(payload)
 		Command.START_WAVE:
 			return _start_wave(payload)
 		Command.SPAWN_ENEMY:
@@ -150,6 +158,12 @@ func get_lane_count() -> int:
 	return _enemy_paths.size()
 
 
+func get_lane_name(lane_index: int) -> String:
+	if lane_index < 0 or lane_index >= _lane_names.size():
+		return "UNKNOWN"
+	return _lane_names[lane_index]
+
+
 func get_enemy_paths() -> Array[PackedVector3Array]:
 	return _enemy_paths
 
@@ -183,6 +197,7 @@ func _begin_mission(payload: Dictionary) -> bool:
 
 	_enemy_health.clear()
 	_enemy_paths = []
+	_lane_names = PackedStringArray()
 	_wave_number = 0
 	_credits = _config.starting_credits
 	_base_health = _config.base_max_health
@@ -204,7 +219,22 @@ func _set_enemy_paths(payload: Dictionary) -> bool:
 			command_rejected.emit(Command.SET_ENEMY_PATHS, "a lane needs at least two points")
 			return false
 	_enemy_paths = paths
+	_lane_names = payload.get("names", PackedStringArray())
+	while _lane_names.size() < paths.size():
+		_lane_names.append("LANE %d" % (_lane_names.size() + 1))
 	enemy_paths_ready.emit(_enemy_paths)
+	return true
+
+
+func _warn_wave(payload: Dictionary) -> bool:
+	var wave_number: int = int(payload.get("wave_number", 0))
+	var lanes: PackedInt32Array = payload.get("lanes", PackedInt32Array())
+	if wave_number <= 0:
+		return false
+	var names: PackedStringArray = PackedStringArray()
+	for lane_index: int in lanes:
+		names.append(get_lane_name(lane_index))
+	wave_incoming.emit(wave_number, names)
 	return true
 
 
