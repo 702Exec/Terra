@@ -3,7 +3,6 @@
 [ext_resource type="Script" path="res://scripts/base_structure.gd" id="1_base"]
 
 [sub_resource type="StandardMaterial3D" id="Material_base"]
-shading_mode = 0
 albedo_color = Color(0.13, 0.72, 0.85, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_base"]
